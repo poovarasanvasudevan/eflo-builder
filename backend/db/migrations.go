@@ -1,0 +1,100 @@
+package db
+
+import "database/sql"
+
+func RunMigrations(db *sql.DB) error {
+	queries := []string{
+		`CREATE TABLE IF NOT EXISTS workflows (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			name VARCHAR(255) NOT NULL,
+			description TEXT,
+			definition JSON,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS executions (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			workflow_id BIGINT NOT NULL,
+			status VARCHAR(50) NOT NULL DEFAULT 'pending',
+			started_at TIMESTAMP NULL,
+			finished_at TIMESTAMP NULL,
+			error TEXT,
+			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS execution_logs (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			execution_id BIGINT NOT NULL,
+			node_id VARCHAR(255) NOT NULL,
+			node_type VARCHAR(100) NOT NULL,
+			status VARCHAR(50) NOT NULL,
+			input JSON,
+			output JSON,
+			error TEXT,
+			executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (execution_id) REFERENCES executions(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS node_configs (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			name VARCHAR(255) NOT NULL,
+			type VARCHAR(100) NOT NULL,
+			config JSON,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS cron_schedules (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			workflow_id BIGINT NOT NULL,
+			expression VARCHAR(255) NOT NULL,
+			timezone VARCHAR(100) NOT NULL DEFAULT 'UTC',
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
+			last_run_at TIMESTAMP NULL,
+			next_run_at TIMESTAMP NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS redis_subscriptions (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			workflow_id BIGINT NOT NULL,
+			config_id BIGINT NOT NULL,
+			channel VARCHAR(500) NOT NULL,
+			is_pattern BOOLEAN NOT NULL DEFAULT FALSE,
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
+			last_msg_at TIMESTAMP NULL,
+			msg_count BIGINT NOT NULL DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE,
+			FOREIGN KEY (config_id) REFERENCES node_configs(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS email_triggers (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			workflow_id BIGINT NOT NULL,
+			config_id BIGINT NOT NULL,
+			mailbox VARCHAR(255) NOT NULL DEFAULT 'INBOX',
+			poll_interval_sec INT NOT NULL DEFAULT 60,
+			mark_seen BOOLEAN NOT NULL DEFAULT TRUE,
+			max_fetch INT NOT NULL DEFAULT 10,
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
+			last_poll_at TIMESTAMP NULL,
+			msg_count BIGINT NOT NULL DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE,
+			FOREIGN KEY (config_id) REFERENCES node_configs(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+	}
+
+	for _, q := range queries {
+		if _, err := db.Exec(q); err != nil {
+			return err
+		}
+	}
+	return nil
+}
