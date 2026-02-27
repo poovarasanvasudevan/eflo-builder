@@ -62,6 +62,7 @@ func (n *FunctionNode) Execute(ctx context.Context, node models.NodeDef, input m
 				return nil, fmt.Errorf("function node: %s (at %s)", jsErr.Message, jsErr.Location)
 			}
 			return nil, fmt.Errorf("function node: %w", runErr)
+		}
 	case <-time.After(timeout):
 		iso.TerminateExecution()
 		<-done
