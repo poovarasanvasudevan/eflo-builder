@@ -9,9 +9,9 @@ const { Text } = Typography;
 export const FUNCTION_NODE_DOC: NodeDoc = {
   title: 'Function',
   description:
-    'Runs JavaScript code in a V8 engine and returns the result to the flow. Upstream data is available as the global `input` object; set `returnValue` to pass data to the next node. The return value is merged into the output directly (no separate "result" key).',
+    'Runs JavaScript code in a V8 engine and returns the result to the flow. Upstream data is available as the global `input` object; set `returnValue` to pass data to the next node. If you do not set `returnValue`, the flow stops at this node.',
   usage:
-    'Write JavaScript in the code editor. The variable `input` holds the data from the previous node. Assign to `returnValue` (object, array, string, or number). If you return an object, its keys become the output keys; if you return a primitive or array, it is set as output.value. Input is used as the base and returnValue overwrites or adds keys.',
+    'Write JavaScript in the code editor. The variable `input` holds the data from the previous node. Assign to `returnValue` (object, array, string, or number). If you return an object, it becomes the entire output (and input to the next node). If you return a primitive or array, the output is { value: returnValue }. If you do not set `returnValue`, the workflow ends at this node and no downstream nodes run.',
   properties: [
     { name: 'code', type: 'string', desc: 'JavaScript code to execute', required: true },
     { name: 'timeoutMs', type: 'number', desc: 'Max execution time in ms (default: 10000)', required: false },
@@ -23,8 +23,8 @@ export const FUNCTION_NODE_DOC: NodeDoc = {
     doubled: 20,
   },
   tips: [
-    'Set `returnValue` to control what the next node receives; if unset, `input` is passed through unchanged.',
-    'Return an object to set output keys directly: returnValue = { ...input, doubled: input.value * 2 };',
+    'Set `returnValue` to control what the next node receives. If you do not set it, the flow stops at this node.',
+    'Return an object to define the entire output: returnValue = { ...input, doubled: input.value * 2 };',
     'Return a primitive or array and it appears as output.value for the next node.',
     'Return values are JSON-serialized; avoid functions or non-serializable values.',
     'Scripts run in a sandbox (no Node.js APIs); use for data transformation only.',
