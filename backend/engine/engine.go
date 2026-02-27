@@ -159,6 +159,11 @@ func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Work
 			break
 		}
 
+		// If a node explicitly requests to stop (e.g. function node with no returnValue), do not follow outgoing edges.
+		if stop, ok := output["_stop"].(bool); ok && stop {
+			continue
+		}
+
 		// For condition/switch nodes, follow the appropriate branch
 		if node.Type == "condition" || node.Type == "switch" {
 			branchStr, _ := output["_branch"].(string)

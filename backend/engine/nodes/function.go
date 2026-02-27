@@ -73,8 +73,20 @@ func (n *FunctionNode) Execute(ctx context.Context, node models.NodeDef, input m
 		return nil, ctx.Err()
 	}
 
-	// Get returnValue (or fall back to input)
-	resultScript := "JSON.stringify(typeof returnValue !== 'undefined' ? returnValue : input)"
+	// Check if returnValue is defined. If not, stop the flow at this node.
+	hasReturnVal, err := v8ctx.RunScript("typeof returnValue !== 'undefined'", "hasReturn.js")
+	if err != nil {
+		return nil, fmt.Errorf("function node: failed to inspect returnValue: %w", err)
+	}
+	if !hasReturnVal.Boolean() {
+		// No explicit returnValue: mark this node as terminal so the engine does not continue.
+		return map[string]interface{}{
+			"_stop": true,
+		}, nil
+	}
+
+	// Get returnValue only (no fallback to input)
+	resultScript := "JSON.stringify(returnValue)"
 	val, err := v8ctx.RunScript(resultScript, "result.js")
 	if err != nil {
 		return nil, fmt.Errorf("function node: failed to get result: %w", err)
@@ -86,22 +98,15 @@ func (n *FunctionNode) Execute(ctx context.Context, node models.NodeDef, input m
 		return nil, fmt.Errorf("function node: result is not valid JSON: %w", err)
 	}
 
-	// Start with input; overlay return value so it becomes the actual output (no "result" wrapper)
-	output := make(map[string]interface{})
-	for k, v := range input {
-		output[k] = v
+	// When a value is returned:
+	// - If it's an object, it becomes the full output map (and thus the next node's input).
+	// - Otherwise, it is wrapped as { value: <primitive/array> }.
+	if m, ok := resultData.(map[string]interface{}); ok {
+		return m, nil
 	}
-	if resultData != nil {
-		if m, ok := resultData.(map[string]interface{}); ok {
-			for k, v := range m {
-				output[k] = v
-			}
-		} else {
-			// Primitive or array: set as "value" so downstream can use it
-			output["value"] = resultData
-		}
-	}
-	return output, nil
+	return map[string]interface{}{
+		"value": resultData,
+	}, nil
 }
 
 func escapeForJS(s string) string {
