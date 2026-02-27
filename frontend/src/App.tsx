@@ -8,6 +8,7 @@ import NodePalette from './components/NodePalette';
 import Canvas from './components/Canvas';
 import NodeConfigPanel from './components/NodeConfigPanel';
 import ExecutionHistory from './components/ExecutionHistory';
+import './splunkui.css'
 
 const RIGHT_PANEL_MIN = 250;
 const RIGHT_PANEL_MAX = 600;
@@ -99,9 +100,10 @@ export default function App() {
         algorithm: theme.compactAlgorithm,
         token: {
           fontSize: 12,
-          borderRadius: 3,
           colorPrimary: PRIMARY,
           controlHeight: 26,
+          borderRadius: 0,
+          fontFamily: `"Splunk Platform Sans", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
         },
       }}
     >

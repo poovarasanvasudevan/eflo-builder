@@ -1,0 +1,76 @@
+/* === Splunk-like global overrides === */
+
+body {
+    font-size: 12px;
+}
+
+/* Sharp scrollbars like Splunk */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f7f7f7;
+}
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* Table dense rows */
+.ant-table-tbody > tr > td {
+    padding: 6px 12px !important;
+}
+.ant-table-thead > tr > th {
+    padding: 6px 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+}
+
+/* Inputs - Splunk pill-less style */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-select-selector {
+    border-radius: 0 !important;
+}
+
+/* Buttons - slightly bolder */
+.ant-btn {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* Splunk-style focus ring */
+.ant-btn:focus-visible,
+.ant-input:focus,
+.ant-select-focused .ant-select-selector {
+    outline: 1px solid #5cc05c !important;
+    box-shadow: 0 0 0 2px rgba(92, 192, 92, 0.15) !important;
+}
+
+/* Panel/Card headers */
+.ant-card-head {
+    background: #14161a;
+    border-bottom: 1px solid #2e3138;
+    min-height: 36px;
+    padding: 0 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8b95a5;
+}
+
+/* Status dots */
+.ant-badge-status-success .ant-badge-status-dot { background: #53a051; }
+.ant-badge-status-error .ant-badge-status-dot   { background: #dc4e41; }
+.ant-badge-status-warning .ant-badge-status-dot { background: #f8be34; }
+
+/*.ant-modal .ant-modal-container { padding: 0 }*/
+/*.ant-modal .ant-modal-header { padding: 8px 16px;}*/
