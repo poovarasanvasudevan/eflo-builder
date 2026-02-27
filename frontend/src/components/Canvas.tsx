@@ -130,7 +130,7 @@ export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
         deleteKeyCode={['Backspace', 'Delete']}
         style={{ background: '#f4f6f9' }}
         snapToGrid
-        snapGrid={[16, 16]}
+        snapGrid={[5, 5]}
       >
         <Background color="#d8dde6" gap={32} size={1} />
         <Controls
