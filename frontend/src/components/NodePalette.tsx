@@ -49,6 +49,7 @@ const CATEGORIES: { title: string; items: NodeItem[] }[] = [
       { type: 'switch', label: 'Switch', icon: <ApartmentOutlined />, color: '#fff', bg: '#e67e22' },
       { type: 'delay', label: 'Delay', icon: <ClockCircleOutlined />, color: '#fff', bg: '#f4c542' },
       { type: 'transform', label: 'Transform', icon: <ToolOutlined />, color: '#fff', bg: '#f49756' },
+      { type: 'function', label: 'Function', icon: <CodeOutlined />, color: '#fff', bg: '#9b59b6' },
     ],
   },
   {

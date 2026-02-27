@@ -174,6 +174,19 @@ function TransformNode({ data }: NodeProps) {
   );
 }
 
+function FunctionNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  const code = (props.code as string) || '';
+  return (
+    <FlowNode
+      icon={<CodeOutlined />}
+      bg="#9b59b6"
+      label={(data as any).label || 'Function'}
+      subtitle={code ? code.substring(0, 20) + (code.length > 20 ? '...' : '') : 'JavaScript'}
+    />
+  );
+}
+
 function RedisNode({ data }: NodeProps) {
   const props = (data as any).properties || {};
   return (
@@ -317,6 +330,7 @@ export const nodeTypes = {
   condition: ConditionNode,
   log: LogNode,
   transform: TransformNode,
+  function: FunctionNode,
   redis: RedisNode,
   cron: CronNode,
   redis_subscribe: RedisSubscribeNode,

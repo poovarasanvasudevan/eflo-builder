@@ -210,6 +210,36 @@ export default function NodeConfigPanel() {
           </div>
         )}
 
+        {nodeType === 'function' && (
+          <>
+            <div>
+              <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>JavaScript Code</Text>
+              <TextArea
+                size="small"
+                rows={8}
+                style={{ fontFamily: 'monospace', fontSize: 10 }}
+                placeholder={'// Input from upstream is in the "input" object.\n// Set returnValue to pass data downstream.\nreturnValue = { ...input, computed: input.value * 2 };'}
+                value={properties.code || ''}
+                onChange={(e) => updateProp('code', e.target.value)}
+              />
+              <Text type="secondary" style={{ fontSize: 10 }}>
+                Use <code>input</code> for upstream data. Set <code>returnValue</code> for the result.
+              </Text>
+            </div>
+            <div>
+              <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Timeout (ms)</Text>
+              <InputNumber
+                size="small"
+                style={{ width: '100%' }}
+                min={1000}
+                max={60000}
+                value={properties.timeoutMs || 10000}
+                onChange={(val) => updateProp('timeoutMs', val)}
+              />
+            </div>
+          </>
+        )}
+
         {nodeType === 'redis' && (
           <>
             <div>

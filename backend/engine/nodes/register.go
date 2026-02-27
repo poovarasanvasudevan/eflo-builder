@@ -20,4 +20,5 @@ func RegisterAll() {
 	engine.Register("exec", &ExecNode{})
 	engine.Register("switch", &SwitchNode{})
 	engine.Register("flow", &FlowNode{})
+	engine.Register("function", &FunctionNode{})
 }

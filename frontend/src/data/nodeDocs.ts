@@ -183,6 +183,34 @@ const NODE_DOCS: Record<string, NodeDoc> = {
     ],
   },
 
+  function: {
+    title: 'Function',
+    description:
+      'Runs JavaScript code in a V8 engine and returns the result to the flow. Upstream data is available as the global `input` object; set `returnValue` to pass data to the next node.',
+    usage:
+      'Write JavaScript in the code editor. The variable `input` holds the data from the previous node. Assign to `returnValue` (object, array, string, or number) to send data downstream. The result is available as the "result" output field.',
+    properties: [
+      { name: 'code', type: 'string', desc: 'JavaScript code to execute', required: true },
+      { name: 'timeoutMs', type: 'number', desc: 'Max execution time in ms (default: 10000)', required: false },
+    ],
+    sampleInput: {
+      value: 10,
+      name: 'Widget',
+    },
+    sampleOutput: {
+      result: { value: 10, name: 'Widget', doubled: 20 },
+      value: 10,
+      name: 'Widget',
+    },
+    tips: [
+      'Always set `returnValue` to control what the next node receives; if unset, `input` is passed through.',
+      '`input` is a plain object; you can spread it: returnValue = { ...input, extra: true };',
+      'Return values are JSON-serialized; avoid functions or non-serializable values.',
+      'Scripts run in a sandbox (no Node.js APIs); use for data transformation only.',
+      'Use the timeout to avoid infinite loops blocking the workflow.',
+    ],
+  },
+
   redis: {
     title: 'Redis',
     description:
