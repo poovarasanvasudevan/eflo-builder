@@ -1,0 +1,71 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+
+#root {
+  zoom: 96%;
+}
+
+.react-flow {
+  zoom: calc(100% / 0.96); /* = ~111.11%, cancels out the parent 90% zoom */
+}
+
+body {
+  background: #f4f6f9;
+  color: #16325c;
+}
+
+/* Salesforce-style scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9c7c5;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a6a4;
+}
+
+/* Fix antd Select inside blue header */
+.ant-select-borderless .ant-select-selector {
+  color: #fff !important;
+}
+.ant-select-borderless .ant-select-selection-placeholder {
+  color: rgba(255,255,255,0.7) !important;
+}
+.ant-select-borderless .ant-select-arrow {
+  color: rgba(255,255,255,0.7) !important;
+}
+.ant-select-borderless .ant-select-clear {
+  color: rgba(255,255,255,0.7) !important;
+}
+
+/* React Flow edge labels */
+.react-flow__edge-text {
+  font-size: 10px;
+  fill: #706e6b;
+}
+
+/* Hide scrollbar for horizontal tab bar */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
