@@ -2,6 +2,8 @@ package engine
 
 import (
 	"context"
+	"net/http"
+
 	"eflo/backend/models"
 	"eflo/backend/repository"
 	"encoding/json"
@@ -22,11 +24,12 @@ func NewEngine(execRepo *repository.ExecutionRepo, execLogRepo *repository.Execu
 
 // RunWorkflow executes the workflow synchronously and returns the execution ID.
 func (e *Engine) RunWorkflow(ctx context.Context, workflow *models.Workflow) (int64, error) {
-	return e.RunWorkflowWithInput(ctx, workflow, nil)
+	return e.RunWorkflowWithInput(ctx, workflow, nil, nil)
 }
 
 // RunWorkflowWithInput executes the workflow with optional initial input injected into the start node.
-func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Workflow, initialInput map[string]interface{}) (int64, error) {
+// If httpRun is non-nil (HTTP-triggered flow), the engine stops when http_out sets response sent.
+func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Workflow, initialInput map[string]interface{}, httpRun *HttpRun) (int64, error) {
 	def := workflow.Definition
 	if def == nil || len(def.Nodes) == 0 {
 		return 0, fmt.Errorf("workflow has no nodes")
@@ -53,10 +56,15 @@ func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Work
 		adjacency[edge.Source] = append(adjacency[edge.Source], edge)
 	}
 
-	// Find start node (start, cron, or redis_subscribe nodes can be entry points)
+	// Inject HTTP response into context for http_out node when this is an HTTP-triggered run
+	if httpRun != nil {
+		ctx = context.WithValue(ctx, httpRunContextKey, httpRun)
+	}
+
+	// Find start node (start, cron, redis_subscribe, email_receive, http_in can be entry points)
 	var startNodeID string
 	for _, n := range def.Nodes {
-		if n.Type == "start" || n.Type == "cron" || n.Type == "redis_subscribe" || n.Type == "email_receive" {
+		if n.Type == "start" || n.Type == "cron" || n.Type == "redis_subscribe" || n.Type == "email_receive" || n.Type == "http_in" {
 			startNodeID = n.ID
 			break
 		}
@@ -111,7 +119,7 @@ func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Work
 				return e.WorkflowRepo.GetByID(wfID)
 			})
 			runner := SubFlowRunner(func(ctx2 context.Context, wf *models.Workflow, inp map[string]interface{}) (int64, error) {
-				return e.RunWorkflowWithInput(ctx2, wf, inp)
+				return e.RunWorkflowWithInput(ctx2, wf, inp, nil)
 			})
 			sfc.SetSubFlowDeps(resolver, runner)
 		}
@@ -146,6 +154,11 @@ func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Work
 		nodeOutputs[currentID] = output
 		e.logNode(execID, node, input, output, nil)
 
+		// If HTTP-out sent the response, stop the flow
+		if httpRun != nil && httpRun.Sent != nil && *httpRun.Sent {
+			break
+		}
+
 		// For condition/switch nodes, follow the appropriate branch
 		if node.Type == "condition" || node.Type == "switch" {
 			branchStr, _ := output["_branch"].(string)
@@ -169,6 +182,15 @@ func (e *Engine) RunWorkflowWithInput(ctx context.Context, workflow *models.Work
 
 	_ = e.ExecRepo.Finish(execID, "completed", "")
 	return execID, nil
+}
+
+// RunWorkflowForHTTP runs the workflow with request data as input and writes the response via http_out.
+// Returns (execID, responseSent, error). If responseSent is false, the handler should send a default response.
+func (e *Engine) RunWorkflowForHTTP(ctx context.Context, workflow *models.Workflow, initialInput map[string]interface{}, w http.ResponseWriter) (execID int64, responseSent bool, err error) {
+	sent := false
+	hr := &HttpRun{W: w, Sent: &sent}
+	execID, err = e.RunWorkflowWithInput(ctx, workflow, initialInput, hr)
+	return execID, sent, err
 }
 
 func (e *Engine) logNode(execID int64, node models.NodeDef, input, output map[string]interface{}, execErr error) {

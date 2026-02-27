@@ -86,12 +86,19 @@ func (n *FunctionNode) Execute(ctx context.Context, node models.NodeDef, input m
 		return nil, fmt.Errorf("function node: result is not valid JSON: %w", err)
 	}
 
-	output := map[string]interface{}{
-		"result": resultData,
-	}
+	// Start with input; overlay return value so it becomes the actual output (no "result" wrapper)
+	output := make(map[string]interface{})
 	for k, v := range input {
-		if _, exists := output[k]; !exists {
-			output[k] = v
+		output[k] = v
+	}
+	if resultData != nil {
+		if m, ok := resultData.(map[string]interface{}); ok {
+			for k, v := range m {
+				output[k] = v
+			}
+		} else {
+			// Primitive or array: set as "value" so downstream can use it
+			output["value"] = resultData
 		}
 	}
 	return output, nil

@@ -2,7 +2,23 @@ package engine
 
 import (
 	"context"
+	"net/http"
+
 	"eflo/backend/models"
+)
+
+// HttpRun carries the HTTP response writer for HTTP-in/out flows. When set, the engine
+// stops after the node that sets Sent (e.g. http_out).
+type HttpRun struct {
+	W    http.ResponseWriter
+	Sent *bool
+}
+
+// Context key for HttpRun (used by http_out node).
+type contextKey int
+
+const (
+	httpRunContextKey contextKey = 1
 )
 
 // ConfigResolver resolves a node config by its ID.
@@ -24,6 +40,16 @@ type NodeExecutor interface {
 // SubFlowCapable is an optional interface for nodes that need to execute sub-workflows.
 type SubFlowCapable interface {
 	SetSubFlowDeps(resolver WorkflowResolver, runner SubFlowRunner)
+}
+
+// HttpRunFromContext returns the HttpRun for this execution if present (HTTP-triggered flow).
+func HttpRunFromContext(ctx context.Context) *HttpRun {
+	v := ctx.Value(httpRunContextKey)
+	if v == nil {
+		return nil
+	}
+	hr, _ := v.(*HttpRun)
+	return hr
 }
 
 // Registry maps node type strings to their executor implementations.

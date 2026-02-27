@@ -145,7 +145,7 @@ func (ep *EmailPoller) poll(triggerID, workflowID, configID int64, mailbox strin
 		emailData["receivedAt"] = time.Now().Format(time.RFC3339)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		execID, err := ep.engine.RunWorkflowWithInput(ctx, wf, emailData)
+		execID, err := ep.engine.RunWorkflowWithInput(ctx, wf, emailData, nil)
 		cancel()
 
 		_ = ep.triggerRepo.IncrementMsgCount(triggerID)

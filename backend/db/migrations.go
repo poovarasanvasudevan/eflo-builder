@@ -89,6 +89,18 @@ func RunMigrations(db *sql.DB) error {
 			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE,
 			FOREIGN KEY (config_id) REFERENCES node_configs(id) ON DELETE CASCADE
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS http_triggers (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			workflow_id BIGINT NOT NULL,
+			path VARCHAR(500) NOT NULL,
+			method VARCHAR(20) NOT NULL DEFAULT 'POST',
+			enabled BOOLEAN NOT NULL DEFAULT TRUE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE,
+			UNIQUE KEY uq_http_trigger_path_method (path, method)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 	}
 
 	for _, q := range queries {

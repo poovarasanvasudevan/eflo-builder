@@ -19,6 +19,7 @@ func NewRouter(
 	cronRepo *repository.CronScheduleRepo,
 	redisSubRepo *repository.RedisSubscriptionRepo,
 	emailTriggerRepo *repository.EmailTriggerRepo,
+	httpTriggerRepo *repository.HttpTriggerRepo,
 	eng *engine.Engine,
 	scheduler *engine.Scheduler,
 	redisSub *engine.RedisSubscriber,
@@ -50,6 +51,7 @@ func NewRouter(
 	crh := &CronHandler{Repo: cronRepo, Scheduler: scheduler}
 	rsh := &RedisSubHandler{Repo: redisSubRepo, Subscriber: redisSub}
 	eth := &EmailTriggerHandler{Repo: emailTriggerRepo, Poller: emailPoller}
+	hth := &HttpTriggerHandler{Repo: httpTriggerRepo, WorkflowRepo: workflowRepo, Engine: eng}
 
 	r.Route("/api", func(r chi.Router) {
 		// Workflow CRUD
@@ -96,6 +98,16 @@ func NewRouter(
 		r.Get("/email-triggers/{id}", eth.GetByID)
 		r.Put("/email-triggers/{id}", eth.Update)
 		r.Delete("/email-triggers/{id}", eth.Delete)
+
+		// HTTP Triggers (HTTP-in / HTTP-out like Node-RED)
+		r.Get("/http-triggers", hth.List)
+		r.Post("/http-triggers", hth.Create)
+		r.Get("/http-triggers/{id}", hth.GetByID)
+		r.Put("/http-triggers/{id}", hth.Update)
+		r.Delete("/http-triggers/{id}", hth.Delete)
+
+		// Inbound HTTP: POST/GET etc. to /api/in/{path} runs the workflow; http_out node sends the response
+		r.HandleFunc("/in/*", hth.HandleHTTPIn)
 	})
 
 	return r

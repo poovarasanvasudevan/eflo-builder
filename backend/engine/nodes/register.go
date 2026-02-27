@@ -18,7 +18,11 @@ func RegisterAll() {
 	engine.Register("read_file", &ReadFileNode{})
 	engine.Register("write_file", &WriteFileNode{})
 	engine.Register("exec", &ExecNode{})
+	engine.Register("ssh", &SSHNode{})
+	engine.Register("database", &DatabaseNode{})
 	engine.Register("switch", &SwitchNode{})
 	engine.Register("flow", &FlowNode{})
 	engine.Register("function", &FunctionNode{})
+	engine.Register("http_in", &HttpInNode{})
+	engine.Register("http_out", &HttpOutNode{})
 }
