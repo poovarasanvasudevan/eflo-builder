@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { ConfigProvider, theme } from 'antd';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useWorkflowStore, restoreTabsOnStartup } from './store/workflowStore';
-import { PRIMARY } from './theme';
+import { PRIMARY, splunkTheme } from './theme';
 import Toolbar from './components/Toolbar';
 import NodePalette from './components/NodePalette';
 import Canvas from './components/Canvas';
@@ -23,6 +23,11 @@ export default function App() {
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [rightPanelWidth, setRightPanelWidth] = useState(RIGHT_PANEL_MIN);
   const [debugPanelHeight, setDebugPanelHeight] = useState(DEBUG_PANEL_DEFAULT);
+  const [darkMode, setDarkMode] = useState(false);
+  const [showScheduleManager, setShowScheduleManager] = useState(false);
+  const [showRedisSubManager, setShowRedisSubManager] = useState(false);
+  const [showEmailTriggerManager, setShowEmailTriggerManager] = useState(false);
+  const [showHttpTriggerManager, setShowHttpTriggerManager] = useState(false);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
@@ -31,10 +36,30 @@ export default function App() {
   const startHeight = useRef(0);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('eflo_theme_mode');
+      if (saved === 'dark') {
+        setDarkMode(true);
+      }
+    } catch {
+      // ignore
+    }
     fetchWorkflows().then(() => {
       restoreTabsOnStartup();
     });
   }, []);
+
+  const toggleThemeMode = () => {
+    setDarkMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('eflo_theme_mode', next ? 'dark' : 'light');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   // Drag-to-resize for right panel
   const onMouseDown = useCallback((e: React.MouseEvent) => {
@@ -94,23 +119,41 @@ export default function App() {
     document.addEventListener('mouseup', onMouseUp);
   }, [debugPanelHeight]);
 
+  const lightTheme = {
+    algorithm: theme.compactAlgorithm,
+    token: {
+      fontSize: 12,
+      colorPrimary: PRIMARY,
+      controlHeight: 26,
+      borderRadius: 0,
+      fontFamily: `"Splunk Platform Sans", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
+    },
+  };
+
   return (
     <ConfigProvider
-      theme={{
-        algorithm: theme.compactAlgorithm,
-        token: {
-          fontSize: 12,
-          colorPrimary: PRIMARY,
-          controlHeight: 26,
-          borderRadius: 0,
-          fontFamily: `"Splunk Platform Sans", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
-        },
-      }}
+      theme={darkMode ? splunkTheme : lightTheme}
     >
       <ReactFlowProvider>
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: "'Salesforce Sans', 'Inter', -apple-system, sans-serif" }}>
+        <div
+          className={darkMode ? 'app-root-dark' : 'app-root-light'}
+          style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: "'Salesforce Sans', 'Inter', -apple-system, sans-serif" }}
+        >
           {/* Top Toolbar (two rows like Flow Builder) */}
-          <Toolbar toolboxOpen={toolboxOpen} onToggleToolbox={() => setToolboxOpen(!toolboxOpen)} />
+          <Toolbar
+            toolboxOpen={toolboxOpen}
+            onToggleToolbox={() => setToolboxOpen(!toolboxOpen)}
+            darkMode={darkMode}
+            toggleDarkMode={toggleThemeMode}
+            showScheduleManager={showScheduleManager}
+            setShowScheduleManager={setShowScheduleManager}
+            showRedisSubManager={showRedisSubManager}
+            setShowRedisSubManager={setShowRedisSubManager}
+            showEmailTriggerManager={showEmailTriggerManager}
+            setShowEmailTriggerManager={setShowEmailTriggerManager}
+            showHttpTriggerManager={showHttpTriggerManager}
+            setShowHttpTriggerManager={setShowHttpTriggerManager}
+          />
 
 
           {/* Main Content */}
@@ -141,7 +184,12 @@ export default function App() {
                     style={{ cursor: 'pointer', fontSize: 14, color: '#706e6b', fontWeight: 300, lineHeight: 1 }}
                   >✕</span>
                 </div>
-                <NodePalette />
+                <NodePalette
+                  onOpenScheduleManager={() => setShowScheduleManager(true)}
+                  onOpenRedisSubManager={() => setShowRedisSubManager(true)}
+                  onOpenEmailTriggerManager={() => setShowEmailTriggerManager(true)}
+                  onOpenHttpTriggerManager={() => setShowHttpTriggerManager(true)}
+                />
               </div>
             )}
 

@@ -35,6 +35,10 @@ import {
   createEmailTrigger,
   updateEmailTrigger as updateEmailTriggerApi,
   deleteEmailTrigger as deleteEmailTriggerApi,
+  getHttpTriggers,
+  createHttpTrigger,
+  updateHttpTrigger as updateHttpTriggerApi,
+  deleteHttpTrigger as deleteHttpTriggerApi,
   type Workflow,
   type Execution,
   type ExecutionLog,
@@ -42,6 +46,7 @@ import {
   type CronSchedule,
   type RedisSubscription,
   type EmailTrigger,
+  type HttpTrigger,
 } from '../api/client';
 
 interface OpenTab {
@@ -87,6 +92,9 @@ interface WorkflowState {
   // Email trigger state
   emailTriggers: EmailTrigger[];
 
+  // HTTP trigger state
+  httpTriggers: HttpTrigger[];
+
   // Getters
   getSelectedNode: () => Node | null;
 
@@ -115,6 +123,7 @@ interface WorkflowState {
   // Actions - execution
   runWorkflow: () => Promise<void>;
   fetchExecutions: () => Promise<void>;
+  fetchExecutionsForFlow: (workflowId: string) => Promise<Execution[]>;
   fetchExecutionLogs: (executionId: number) => Promise<void>;
   setShowExecutionPanel: (show: boolean) => void;
 
@@ -141,6 +150,12 @@ interface WorkflowState {
   addEmailTrigger: (data: Partial<EmailTrigger>) => Promise<void>;
   editEmailTrigger: (id: number, data: Partial<EmailTrigger>) => Promise<void>;
   removeEmailTrigger: (id: number) => Promise<void>;
+
+  // Actions - HTTP triggers
+  fetchHttpTriggers: () => Promise<void>;
+  addHttpTrigger: (data: Partial<HttpTrigger>) => Promise<void>;
+  editHttpTrigger: (id: number, data: Partial<HttpTrigger>) => Promise<void>;
+  removeHttpTrigger: (id: number) => Promise<void>;
 }
 
 // --- LocalStorage persistence for tabs ---
@@ -188,6 +203,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   schedules: [],
   redisSubs: [],
   emailTriggers: [],
+  httpTriggers: [],
 
   getSelectedNode: () => {
     const { nodes, selectedNodeId } = get();
@@ -495,6 +511,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     set({ executions: res.data || [] });
   },
 
+  fetchExecutionsForFlow: async (workflowId: string) => {
+    const res = await getExecutions(Number(workflowId));
+    return res.data || [];
+  },
+
   fetchExecutionLogs: async (executionId: number) => {
     const res = await getExecutionLogs(executionId);
     set({ executionLogs: res.data || [] });
@@ -584,6 +605,24 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   removeEmailTrigger: async (id: number) => {
     await deleteEmailTriggerApi(id);
     await get().fetchEmailTriggers();
+  },
+
+  // HTTP trigger actions
+  fetchHttpTriggers: async () => {
+    const res = await getHttpTriggers();
+    set({ httpTriggers: res.data || [] });
+  },
+  addHttpTrigger: async (data: Partial<HttpTrigger>) => {
+    await createHttpTrigger(data);
+    await get().fetchHttpTriggers();
+  },
+  editHttpTrigger: async (id: number, data: Partial<HttpTrigger>) => {
+    await updateHttpTriggerApi(id, data);
+    await get().fetchHttpTriggers();
+  },
+  removeHttpTrigger: async (id: number) => {
+    await deleteHttpTriggerApi(id);
+    await get().fetchHttpTriggers();
   },
 }));
 

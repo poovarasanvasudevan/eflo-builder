@@ -20,7 +20,9 @@ import {
   ApartmentOutlined,
   SearchOutlined,
   PartitionOutlined,
+  CloudServerOutlined,
 } from '@ant-design/icons';
+import type { ReactNode } from 'react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { PRIMARY } from '../theme';
 
@@ -39,8 +41,35 @@ const CATEGORIES: { title: string; items: NodeItem[] }[] = [
       { type: 'start', label: 'Start', icon: <PlayCircleOutlined />, color: '#fff', bg: '#4bc076' },
       { type: 'cron', label: 'Cron', icon: <FieldTimeOutlined />, color: '#fff', bg: '#2e7d32' },
       { type: 'redis_subscribe', label: 'Redis Subscribe', icon: <NotificationOutlined />, color: '#fff', bg: '#c0392b' },
-      { type: 'email_receive', label: 'Receive Email', icon: <InboxOutlined />, color: '#fff', bg: '#6c3483' },
     ],
+  },
+  {
+    title: "Network",
+    items: [
+      { type: 'http_in', label: 'HTTP In', icon: <GlobalOutlined />, color: '#fff', bg: '#3498db' },
+      { type: 'http_out', label: 'HTTP Out', icon: <GlobalOutlined />, color: '#fff', bg: '#2ecc71' },
+    ]
+  },
+  {
+    title: "Files",
+    items: [
+      { type: 'read_file', label: 'Read File', icon: <FolderOpenOutlined />, color: '#fff', bg: '#2980b9' },
+      { type: 'write_file', label: 'Write File', icon: <EditOutlined />, color: '#fff', bg: '#27ae60' },
+    ]
+  },
+  {
+    title: "Email",
+    items: [
+      { type: 'email', label: 'Send Email', icon: <MailOutlined />, color: '#fff', bg: '#8e44ad' },
+      { type: 'email_receive', label: 'Receive Email', icon: <InboxOutlined />, color: '#fff', bg: '#6c3483' },
+    ]
+  },
+  {
+    title: "Database",
+    items: [
+      { type: 'database', label: 'Database', icon: <DatabaseOutlined />, color: '#fff', bg: '#2980b9' },
+      { type: 'redis', label: 'Redis', icon: <DatabaseOutlined />, color: '#fff', bg: '#d63031' },
+    ]
   },
   {
     title: 'Logic',
@@ -57,25 +86,44 @@ const CATEGORIES: { title: string; items: NodeItem[] }[] = [
     items: [
       { type: 'http_request', label: 'HTTP Request', icon: <GlobalOutlined />, color: '#fff', bg: PRIMARY },
       { type: 'log', label: 'Log', icon: <FileTextOutlined />, color: '#fff', bg: '#54b7d3' },
-      { type: 'redis', label: 'Redis', icon: <DatabaseOutlined />, color: '#fff', bg: '#d63031' },
-      { type: 'email', label: 'Send Email', icon: <MailOutlined />, color: '#fff', bg: '#8e44ad' },
-      { type: 'read_file', label: 'Read File', icon: <FolderOpenOutlined />, color: '#fff', bg: '#2980b9' },
-      { type: 'write_file', label: 'Write File', icon: <EditOutlined />, color: '#fff', bg: '#27ae60' },
       { type: 'exec', label: 'Exec Command', icon: <CodeOutlined />, color: '#fff', bg: '#2c3e50' },
-      { type: 'flow', label: 'Sub-Flow', icon: <PartitionOutlined />, color: '#fff', bg: '#1a5276' },
+      { type: 'ssh', label: 'SSH', icon: <CloudServerOutlined />, color: '#fff', bg: '#16a085' },
     ],
   },
   {
     title: 'Flow',
     items: [
+      { type: 'flow', label: 'Sub-Flow', icon: <PartitionOutlined />, color: '#fff', bg: '#1a5276' },
       { type: 'end', label: 'End', icon: <StopOutlined />, color: '#fff', bg: '#e8647c' },
     ],
   },
 ];
 
-export default function NodePalette() {
+export interface TriggerTabCallbacks {
+  onOpenScheduleManager?: () => void;
+  onOpenRedisSubManager?: () => void;
+  onOpenEmailTriggerManager?: () => void;
+  onOpenHttpTriggerManager?: () => void;
+}
+
+interface NodePaletteProps extends TriggerTabCallbacks {}
+
+const TRIGGER_ITEMS: { key: string; label: string; icon: ReactNode; bg: string; onClickKey: keyof TriggerTabCallbacks }[] = [
+  { key: 'cron', label: 'Cron Schedules', icon: <FieldTimeOutlined />, bg: '#2e7d32', onClickKey: 'onOpenScheduleManager' },
+  { key: 'redis', label: 'Redis Subscriptions', icon: <NotificationOutlined />, bg: '#c0392b', onClickKey: 'onOpenRedisSubManager' },
+  { key: 'email', label: 'Email Triggers', icon: <InboxOutlined />, bg: '#6c3483', onClickKey: 'onOpenEmailTriggerManager' },
+  { key: 'http', label: 'HTTP Triggers', icon: <GlobalOutlined />, bg: '#3498db', onClickKey: 'onOpenHttpTriggerManager' },
+];
+
+export default function NodePalette({
+  onOpenScheduleManager,
+  onOpenRedisSubManager,
+  onOpenEmailTriggerManager,
+  onOpenHttpTriggerManager,
+}: NodePaletteProps = {}) {
   const { workflows, currentWorkflow, loadWorkflow, openTabs } = useWorkflowStore();
   const [search, setSearch] = useState('');
+  const triggerCallbacks = { onOpenScheduleManager, onOpenRedisSubManager, onOpenEmailTriggerManager, onOpenHttpTriggerManager };
 
   const filteredCategories = useMemo(() => {
     if (!search.trim()) return CATEGORIES;
@@ -105,6 +153,53 @@ export default function NodePalette() {
         size="small"
         style={{ padding: '0 8px' }}
         items={[
+          {
+            key: 'trigger',
+            label: 'Trigger',
+            children: (
+              <div style={{ paddingBottom: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#706e6b', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, padding: '0 2px' }}>
+                  Trigger configs
+                </div>
+                {TRIGGER_ITEMS.map((item) => {
+                  const onClick = triggerCallbacks[item.onClickKey];
+                  return (
+                    <div
+                      key={item.key}
+                      onClick={() => onClick?.()}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 8px',
+                        cursor: onClick ? 'pointer' : 'default',
+                        borderRadius: 4,
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = '#f3f2f2'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 4,
+                        background: item.bg,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontSize: 12,
+                        flexShrink: 0,
+                      }}>
+                        {item.icon}
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 500 }}>{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ),
+          },
           {
             key: 'elements',
             label: 'Elements',

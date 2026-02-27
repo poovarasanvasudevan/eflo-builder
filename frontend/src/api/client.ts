@@ -158,5 +158,24 @@ export const updateEmailTrigger = (id: number, data: Partial<EmailTrigger>) =>
   api.put<EmailTrigger>(`/email-triggers/${id}`, data);
 export const deleteEmailTrigger = (id: number) => api.delete(`/email-triggers/${id}`);
 
+// HTTP Triggers (HTTP-in / HTTP-out like Node-RED)
+export interface HttpTrigger {
+  id: number;
+  workflowId: number;
+  path: string;
+  method: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getHttpTriggers = () => api.get<HttpTrigger[]>('/http-triggers');
+export const getHttpTrigger = (id: number) => api.get<HttpTrigger>(`/http-triggers/${id}`);
+export const createHttpTrigger = (data: Partial<HttpTrigger>) =>
+  api.post<HttpTrigger>('/http-triggers', data);
+export const updateHttpTrigger = (id: number, data: Partial<HttpTrigger>) =>
+  api.put<HttpTrigger>(`/http-triggers/${id}`, data);
+export const deleteHttpTrigger = (id: number) => api.delete(`/http-triggers/${id}`);
+
 export default api;
 

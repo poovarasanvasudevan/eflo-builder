@@ -17,6 +17,7 @@ import {
   CodeOutlined,
   ApartmentOutlined,
   PartitionOutlined,
+  CloudServerOutlined,
 } from '@ant-design/icons';
 import { PRIMARY } from '../theme';
 
@@ -286,6 +287,54 @@ function ExecNode({ data }: NodeProps) {
   );
 }
 
+function SshNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  return (
+    <FlowNode
+      icon={<CloudServerOutlined />}
+      bg="#16a085"
+      label={(data as any).label || 'SSH'}
+      subtitle={props.command ? props.command.substring(0, 20) : 'command...'}
+    />
+  );
+}
+
+function HttpInNode({ data }: NodeProps) {
+  return (
+    <FlowNode
+      icon={<GlobalOutlined />}
+      bg="#3498db"
+      label={(data as any).label || 'HTTP In'}
+      subtitle="/api/in/..."
+      hasTarget={false}
+    />
+  );
+}
+
+function HttpOutNode({ data }: NodeProps) {
+  return (
+    <FlowNode
+      icon={<GlobalOutlined />}
+      bg="#2ecc71"
+      label={(data as any).label || 'HTTP Out'}
+      subtitle="Send response"
+    />
+  );
+}
+
+function DatabaseNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  const q = (props.query as string) || '';
+  return (
+    <FlowNode
+      icon={<DatabaseOutlined />}
+      bg="#2980b9"
+      label={(data as any).label || 'Database'}
+      subtitle={q ? q.replace(/\s+/g, ' ').trim().substring(0, 24) : 'SQL...'}
+    />
+  );
+}
+
 function SwitchNode({ data }: NodeProps) {
   const props = (data as any).properties || {};
   const cases: { label: string; value: string }[] = props.cases || [];
@@ -339,6 +388,10 @@ export const nodeTypes = {
   read_file: ReadFileNode,
   write_file: WriteFileNode,
   exec: ExecNode,
+  ssh: SshNode,
+  database: DatabaseNode,
+  http_in: HttpInNode,
+  http_out: HttpOutNode,
   switch: SwitchNode,
   flow: SubFlowNode,
 };

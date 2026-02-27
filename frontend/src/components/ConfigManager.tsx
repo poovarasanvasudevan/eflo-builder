@@ -27,6 +27,8 @@ const { Text } = Typography;
 const CONFIG_TYPES = [
   { value: 'redis', label: 'Redis', color: '#d63031' },
   { value: 'email', label: 'Email (SMTP)', color: '#8e44ad' },
+  { value: 'ssh', label: 'SSH', color: '#16a085' },
+  { value: 'database', label: 'Database', color: '#2980b9' },
 ];
 
 interface ConfigFormState {
@@ -42,6 +44,12 @@ interface ConfigFormState {
   tls: boolean;
   imapHost: string;
   imapPort: number;
+  // SSH-specific
+  authMethod: string;
+  privateKey: string;
+  // Database-specific
+  driver: string;
+  database: string;
 }
 
 const defaultForm: ConfigFormState = {
@@ -56,6 +64,10 @@ const defaultForm: ConfigFormState = {
   tls: true,
   imapHost: '',
   imapPort: 993,
+  authMethod: 'password',
+  privateKey: '',
+  driver: 'mysql',
+  database: '',
 };
 
 export default function ConfigManager({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -76,18 +88,23 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
   };
 
   const openEdit = (cfg: NodeConfig) => {
+    const isDb = cfg.type === 'database';
     setForm({
       name: cfg.name,
       type: cfg.type,
-      host: (cfg.config?.host as string) || (cfg.type === 'email' ? 'smtp.gmail.com' : '127.0.0.1'),
-      port: (cfg.config?.port as number) || (cfg.type === 'email' ? 587 : 6379),
+      host: (cfg.config?.host as string) || (cfg.type === 'email' ? 'smtp.gmail.com' : cfg.type === 'ssh' ? '' : isDb ? '127.0.0.1' : '127.0.0.1'),
+      port: (cfg.config?.port as number) ?? (cfg.type === 'email' ? 587 : cfg.type === 'ssh' ? 22 : isDb ? 3306 : 6379),
       password: (cfg.config?.password as string) || '',
       db: (cfg.config?.db as number) || 0,
-      username: (cfg.config?.username as string) || '',
+      username: (cfg.config?.username as string) || (cfg.config?.user as string) || '',
       from: (cfg.config?.from as string) || '',
       tls: cfg.config?.tls !== false,
       imapHost: (cfg.config?.imapHost as string) || '',
       imapPort: (cfg.config?.imapPort as number) || 993,
+      authMethod: (cfg.config?.authMethod as string) || 'password',
+      privateKey: (cfg.config?.privateKey as string) || '',
+      driver: (cfg.config?.driver as string) || 'mysql',
+      database: (cfg.config?.database as string) || '',
     });
     setEditingId(cfg.id);
     setFormOpen(true);
@@ -97,6 +114,38 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
     if (!form.name.trim()) {
       messageApi.warning('Name is required');
       return;
+    }
+    if (form.type === 'ssh') {
+      if (!form.host.trim()) {
+        messageApi.warning('Host is required for SSH config');
+        return;
+      }
+      if (!form.username.trim()) {
+        messageApi.warning('Username is required for SSH config');
+        return;
+      }
+      if (form.authMethod === 'privateKey' && !form.privateKey.trim()) {
+        messageApi.warning('Private key is required when using key authentication');
+        return;
+      }
+      if (form.authMethod === 'password' && !form.password) {
+        messageApi.warning('Password is required when using password authentication');
+        return;
+      }
+    }
+    if (form.type === 'database') {
+      if (!form.host.trim()) {
+        messageApi.warning('Host is required for Database config');
+        return;
+      }
+      if (!form.username.trim()) {
+        messageApi.warning('Username is required for Database config');
+        return;
+      }
+      if (!form.database.trim()) {
+        messageApi.warning('Database name is required');
+        return;
+      }
     }
     let configData: Record<string, any>;
     if (form.type === 'email') {
@@ -109,6 +158,24 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
         tls: form.tls,
         imapHost: form.imapHost || '',
         imapPort: form.imapPort || 993,
+      };
+    } else if (form.type === 'ssh') {
+      configData = {
+        host: form.host,
+        port: form.port,
+        username: form.username,
+        authMethod: form.authMethod,
+        password: form.authMethod === 'password' ? form.password : '',
+        privateKey: form.authMethod === 'privateKey' ? form.privateKey : '',
+      };
+    } else if (form.type === 'database') {
+      configData = {
+        driver: form.driver,
+        host: form.host,
+        port: form.port,
+        username: form.username,
+        password: form.password,
+        database: form.database,
       };
     } else {
       configData = {
@@ -166,11 +233,13 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
     {
       title: 'Details',
       key: 'host',
-      render: (_: any, record: NodeConfig) => (
+        render: (_: any, record: NodeConfig) => (
         <Text type="secondary" style={{ fontSize: 11 }}>
           {record.config?.host || 'localhost'}:{record.config?.port || ''}
-          {record.type === 'redis' && record.config?.db ? ` / db${record.config.db}` : ''}
+          {record.type === 'redis' && record.config?.db != null ? ` / db${record.config.db}` : ''}
           {record.type === 'email' && record.config?.username ? ` (${record.config.username})` : ''}
+          {record.type === 'ssh' && record.config?.username ? ` (${record.config.username})` : ''}
+          {record.type === 'database' ? ` / ${record.config?.database || ''} (${record.config?.driver || 'mysql'})` : ''}
         </Text>
       ),
     },
@@ -253,6 +322,10 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
               onChange={(val) => {
                 if (val === 'email') {
                   setForm({ ...form, type: val, host: 'smtp.gmail.com', port: 587 });
+                } else if (val === 'ssh') {
+                  setForm({ ...form, type: val, host: '', port: 22 });
+                } else if (val === 'database') {
+                  setForm({ ...form, type: val, host: '127.0.0.1', port: 3306, driver: 'mysql', database: '' });
                 } else {
                   setForm({ ...form, type: val, host: '127.0.0.1', port: 6379 });
                 }
@@ -264,7 +337,7 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
             <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Host</Text>
             <Input
               size="small"
-              placeholder={form.type === 'email' ? 'smtp.gmail.com' : '127.0.0.1'}
+              placeholder={form.type === 'email' ? 'smtp.gmail.com' : form.type === 'ssh' ? '192.168.1.10 or host.example.com' : form.type === 'database' ? '127.0.0.1 or db.example.com' : '127.0.0.1'}
               value={form.host}
               onChange={(e) => setForm({ ...form, host: e.target.value })}
             />
@@ -277,9 +350,54 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
               min={1}
               max={65535}
               value={form.port}
-              onChange={(val) => setForm({ ...form, port: val || (form.type === 'email' ? 587 : 6379) })}
+              onChange={(val) => setForm({ ...form, port: val ?? (form.type === 'email' ? 587 : form.type === 'ssh' ? 22 : form.type === 'database' ? 3306 : 6379) })}
             />
           </div>
+
+          {form.type === 'database' && (
+            <>
+              <div>
+                <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Driver</Text>
+                <Select
+                  size="small"
+                  style={{ width: '100%' }}
+                  value={form.driver}
+                  onChange={(val) => setForm({ ...form, driver: val, port: val === 'sqlserver' ? 1433 : 3306 })}
+                  options={[
+                    { value: 'mysql', label: 'MySQL' },
+                    { value: 'sqlserver', label: 'SQL Server' },
+                  ]}
+                />
+              </div>
+              <div>
+                <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Database name</Text>
+                <Input
+                  size="small"
+                  placeholder="mydb"
+                  value={form.database}
+                  onChange={(e) => setForm({ ...form, database: e.target.value })}
+                />
+              </div>
+              <div>
+                <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Username</Text>
+                <Input
+                  size="small"
+                  placeholder="dbuser"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                />
+              </div>
+              <div>
+                <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Password</Text>
+                <Input.Password
+                  size="small"
+                  placeholder="Database password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                />
+              </div>
+            </>
+          )}
 
           {form.type === 'email' && (
             <>
@@ -370,6 +488,58 @@ export default function ConfigManager({ open, onClose }: { open: boolean; onClos
                   onChange={(val) => setForm({ ...form, db: val || 0 })}
                 />
               </div>
+            </>
+          )}
+
+          {form.type === 'ssh' && (
+            <>
+              <div>
+                <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Username</Text>
+                <Input
+                  size="small"
+                  placeholder="root or deploy"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                />
+              </div>
+              <div>
+                <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Authentication</Text>
+                <Select
+                  size="small"
+                  style={{ width: '100%' }}
+                  value={form.authMethod}
+                  onChange={(val) => setForm({ ...form, authMethod: val })}
+                  options={[
+                    { value: 'password', label: 'Password' },
+                    { value: 'privateKey', label: 'Private key (PEM)' },
+                  ]}
+                />
+              </div>
+              {form.authMethod === 'password' && (
+                <div>
+                  <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Password</Text>
+                  <Input.Password
+                    size="small"
+                    placeholder="SSH password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                </div>
+              )}
+              {form.authMethod === 'privateKey' && (
+                <div>
+                  <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Private key (PEM)</Text>
+                  <Input.TextArea
+                    size="small"
+                    rows={4}
+                    placeholder="-----BEGIN ... END ...-----"
+                    value={form.privateKey}
+                    onChange={(e) => setForm({ ...form, privateKey: e.target.value })}
+                    style={{ fontFamily: 'monospace', fontSize: 10 }}
+                  />
+                  <Text type="secondary" style={{ fontSize: 9 }}>Paste the full PEM content including the header and footer.</Text>
+                </div>
+              )}
             </>
           )}
         </Space>

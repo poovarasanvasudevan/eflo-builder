@@ -9,7 +9,6 @@ import {
   DeleteOutlined,
   HistoryOutlined,
   SettingOutlined,
-  FieldTimeOutlined,
   UndoOutlined,
   RedoOutlined,
   ScissorOutlined,
@@ -18,8 +17,8 @@ import {
   AppstoreOutlined,
   QuestionCircleOutlined,
   BugOutlined,
-  NotificationOutlined,
-  InboxOutlined, FileImageFilled,
+  FileImageFilled,
+  BulbOutlined,
 } from '@ant-design/icons';
 import { useWorkflowStore } from '../store/workflowStore';
 import { exportWorkflow } from '../api/client';
@@ -28,6 +27,7 @@ import ConfigManager from './ConfigManager';
 import ScheduleManager from './ScheduleManager';
 import RedisSubscriptionManager from './RedisSubscriptionManager';
 import EmailTriggerManager from './EmailTriggerManager';
+import HttpTriggerManager from './HttpTriggerManager';
 import {getNodesBounds, getViewportForBounds, useReactFlow} from "@xyflow/react";
 import {toPng} from "html-to-image";
 
@@ -36,9 +36,32 @@ const { TextArea } = Input;
 interface ToolbarProps {
   toolboxOpen: boolean;
   onToggleToolbox: () => void;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
+  showScheduleManager: boolean;
+  setShowScheduleManager: (v: boolean) => void;
+  showRedisSubManager: boolean;
+  setShowRedisSubManager: (v: boolean) => void;
+  showEmailTriggerManager: boolean;
+  setShowEmailTriggerManager: (v: boolean) => void;
+  showHttpTriggerManager: boolean;
+  setShowHttpTriggerManager: (v: boolean) => void;
 }
 
-export default function Toolbar({ toolboxOpen, onToggleToolbox }: ToolbarProps) {
+export default function Toolbar({
+  toolboxOpen,
+  onToggleToolbox,
+  darkMode,
+  toggleDarkMode,
+  showScheduleManager,
+  setShowScheduleManager,
+  showRedisSubManager,
+  setShowRedisSubManager,
+  showEmailTriggerManager,
+  setShowEmailTriggerManager,
+  showHttpTriggerManager,
+  setShowHttpTriggerManager,
+}: ToolbarProps) {
   const {
     currentWorkflow,
     workflows,
@@ -66,9 +89,6 @@ export default function Toolbar({ toolboxOpen, onToggleToolbox }: ToolbarProps) 
   const [newDesc, setNewDesc] = useState('');
   const [messageApi, contextHolder] = message.useMessage();
   const [showConfigManager, setShowConfigManager] = useState(false);
-  const [showScheduleManager, setShowScheduleManager] = useState(false);
-  const [showRedisSubManager, setShowRedisSubManager] = useState(false);
-  const [showEmailTriggerManager, setShowEmailTriggerManager] = useState(false);
 
   const handleSave = async () => {
     if (!currentWorkflow) return;
@@ -210,15 +230,6 @@ export default function Toolbar({ toolboxOpen, onToggleToolbox }: ToolbarProps) 
             onClick={() => setShowNewDialog(true)}
           >New</Button>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
-          <Tooltip title="Cron Schedules">
-            <Button type="text" size="small" icon={<FieldTimeOutlined />} style={{ color: '#fff' }} onClick={() => setShowScheduleManager(true)} />
-          </Tooltip>
-          <Tooltip title="Redis Subscriptions">
-            <Button type="text" size="small" icon={<NotificationOutlined />} style={{ color: '#fff' }} onClick={() => setShowRedisSubManager(true)} />
-          </Tooltip>
-          <Tooltip title="Email Triggers">
-            <Button type="text" size="small" icon={<InboxOutlined />} style={{ color: '#fff' }} onClick={() => setShowEmailTriggerManager(true)} />
-          </Tooltip>
           <Tooltip title="Connection Configs">
             <Button type="text" size="small" icon={<SettingOutlined />} style={{ color: '#fff' }} onClick={() => setShowConfigManager(true)} />
           </Tooltip>
@@ -229,6 +240,16 @@ export default function Toolbar({ toolboxOpen, onToggleToolbox }: ToolbarProps) 
               icon={<HistoryOutlined />}
               style={{ color: showExecutionPanel ? '#ffd700' : '#fff' }}
               onClick={() => setShowExecutionPanel(!showExecutionPanel)}
+            />
+          </Tooltip>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
+          <Tooltip title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <Button
+              type="text"
+              size="small"
+              icon={<BulbOutlined />}
+              style={{ color: '#fff' }}
+              onClick={toggleDarkMode}
             />
           </Tooltip>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
@@ -390,6 +411,7 @@ export default function Toolbar({ toolboxOpen, onToggleToolbox }: ToolbarProps) 
       <ScheduleManager open={showScheduleManager} onClose={() => setShowScheduleManager(false)} />
       <RedisSubscriptionManager open={showRedisSubManager} onClose={() => setShowRedisSubManager(false)} />
       <EmailTriggerManager open={showEmailTriggerManager} onClose={() => setShowEmailTriggerManager(false)} />
+      <HttpTriggerManager open={showHttpTriggerManager} onClose={() => setShowHttpTriggerManager(false)} />
 
       <Modal
         title="Create New Workflow"
