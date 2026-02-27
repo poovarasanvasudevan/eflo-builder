@@ -163,8 +163,8 @@ export default function App() {
               <div
                 style={{
                   width: 220,
-                  borderRight: '1px solid #d8dde6',
-                  background: '#ffffff',
+                  borderRight: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
+                  background: darkMode ? '#1f2227' : '#ffffff',
                   overflowY: 'auto',
                   flexShrink: 0,
                   display: 'flex',
@@ -176,12 +176,12 @@ export default function App() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '6px 10px',
-                  borderBottom: '1px solid #d8dde6',
+                  borderBottom: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
                 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#16325c' }}>Toolbox</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? '#e2e8f0' : '#16325c' }}>Toolbox</span>
                   <span
                     onClick={() => setToolboxOpen(false)}
-                    style={{ cursor: 'pointer', fontSize: 14, color: '#706e6b', fontWeight: 300, lineHeight: 1 }}
+                    style={{ cursor: 'pointer', fontSize: 14, color: darkMode ? '#8b95a5' : '#706e6b', fontWeight: 300, lineHeight: 1 }}
                   >✕</span>
                 </div>
                 <NodePalette
@@ -195,7 +195,7 @@ export default function App() {
 
             {/* Center - Canvas */}
             <div style={{ flex: 1, position: 'relative' }}>
-              <Canvas />
+              <Canvas darkMode={darkMode} />
             </div>
 
             {/* Right Sidebar - Config Panel (only when a node is selected) */}

@@ -32,6 +32,16 @@ body {
   color: #16325c;
 }
 
+.app-root-light {
+  background: #f4f6f9;
+  color: #16325c;
+}
+
+.app-root-dark {
+  background: #14161a;
+  color: #c3cbd8;
+}
+
 /* Salesforce-style scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

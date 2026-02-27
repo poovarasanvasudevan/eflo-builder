@@ -21,7 +21,7 @@ const defaultEdgeOptions = {
   style: { stroke: '#b0b0b0', strokeWidth: 2 },
 };
 
-export default function Canvas() {
+export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
@@ -94,8 +94,8 @@ export default function Canvas() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f4f6f9',
-          color: '#706e6b',
+          background: darkMode ? '#14161a' : '#f4f6f9',
+          color: darkMode ? '#c3cbd8' : '#706e6b',
           gap: 8,
         }}
       >

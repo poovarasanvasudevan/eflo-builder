@@ -265,8 +265,8 @@ export default function Toolbar({
         alignItems: 'center',
         padding: '0 8px',
         height: 32,
-        background: '#f3f2f2',
-        borderBottom: '1px solid #d8dde6',
+        background: darkMode ? '#1f2227' : '#f3f2f2',
+        borderBottom: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
       }}>
         {/* Left icon cluster */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
