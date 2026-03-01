@@ -1,6 +1,6 @@
 import { Table } from 'antd';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { useWorkflowStore } from '../store/workflowStore';
 import {NormalToolbar} from "../components/NormalToolbar.tsx";
 

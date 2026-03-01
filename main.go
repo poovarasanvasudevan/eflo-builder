@@ -40,6 +40,7 @@ func main() {
 	execRepo := repository.NewExecutionRepo(database)
 	execLogRepo := repository.NewExecutionLogRepo(database)
 	configRepo := repository.NewNodeConfigRepo(database)
+	configStoreRepo := repository.NewConfigStoreRepo(database)
 	cronRepo := repository.NewCronScheduleRepo(database)
 	redisSubRepo := repository.NewRedisSubscriptionRepo(database)
 	emailTriggerRepo := repository.NewEmailTriggerRepo(database)
@@ -49,7 +50,7 @@ func main() {
 	nodes.RegisterAll()
 
 	// Initialize engine
-	eng := engine.NewEngine(execRepo, execLogRepo, configRepo, workflowRepo)
+	eng := engine.NewEngine(execRepo, execLogRepo, configRepo, configStoreRepo, workflowRepo)
 
 	// Initialize and start cron scheduler
 	scheduler := engine.NewScheduler(eng, workflowRepo, cronRepo)
@@ -73,7 +74,7 @@ func main() {
 	defer emailPoller.Stop()
 
 	// Setup router
-	router := api.NewRouter(workflowRepo, execRepo, execLogRepo, configRepo, cronRepo, redisSubRepo, emailTriggerRepo, httpTriggerRepo, eng, scheduler, redisSub, emailPoller)
+	router := api.NewRouter(workflowRepo, execRepo, execLogRepo, configRepo, configStoreRepo, cronRepo, redisSubRepo, emailTriggerRepo, httpTriggerRepo, eng, scheduler, redisSub, emailPoller)
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Eflo workflow engine starting on %s", addr)

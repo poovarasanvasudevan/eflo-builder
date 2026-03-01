@@ -36,15 +36,23 @@ func (n *FunctionNode) Execute(ctx context.Context, node models.NodeDef, input m
 	}
 	escaped := escapeForJS(string(inputJSON))
 
+	// Config map for global `config` (secrets, tokens from Config Store)
+	configMap := engine.ConfigMapFromContext(ctx)
+	configJSON := "{}"
+	if configMap != nil {
+		cfgBytes, _ := json.Marshal(configMap)
+		configJSON = escapeForJS(string(cfgBytes))
+	}
+
 	iso := v8.NewIsolate()
 	defer iso.Dispose()
 	v8ctx := v8.NewContext(iso)
 	defer v8ctx.Close()
 
-	// Inject input as global `input`
-	bootstrap := fmt.Sprintf("var input = JSON.parse('%s');", escaped)
+	// Inject input and config as globals: input, config (use config['token'] or config.token in code)
+	bootstrap := fmt.Sprintf("var input = JSON.parse('%s'); var config = JSON.parse('%s');", escaped, configJSON)
 	if _, err := v8ctx.RunScript(bootstrap, "bootstrap.js"); err != nil {
-		return nil, fmt.Errorf("function node: failed to inject input: %w", err)
+		return nil, fmt.Errorf("function node: failed to inject input/config: %w", err)
 	}
 
 	// Run user script with timeout

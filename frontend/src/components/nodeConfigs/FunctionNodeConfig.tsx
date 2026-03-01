@@ -9,9 +9,9 @@ const { Text } = Typography;
 export const FUNCTION_NODE_DOC: NodeDoc = {
   title: 'Function',
   description:
-    'Runs JavaScript code in a V8 engine and returns the result to the flow. Upstream data is available as the global `input` object; set `returnValue` to pass data to the next node. If you do not set `returnValue`, the flow stops at this node.',
+    'Runs JavaScript code in a V8 engine and returns the result to the flow. Upstream data is available as the global `input` object; secrets from Config Store are in the global `config` object. Set `returnValue` to pass data to the next node.',
   usage:
-    'Write JavaScript in the code editor. The variable `input` holds the data from the previous node. Assign to `returnValue` (object, array, string, or number). If you return an object, it becomes the entire output (and input to the next node). If you return a primitive or array, the output is { value: returnValue }. If you do not set `returnValue`, the workflow ends at this node and no downstream nodes run.',
+    'Write JavaScript in the code editor. Use `input` for data from the previous node and `config` for secrets (e.g. config.token, config["API_KEY"]). Assign to `returnValue` to pass data downstream. If you do not set `returnValue`, the workflow ends at this node.',
   properties: [
     { name: 'code', type: 'string', desc: 'JavaScript code to execute', required: true },
     { name: 'timeoutMs', type: 'number', desc: 'Max execution time in ms (default: 10000)', required: false },
@@ -23,6 +23,7 @@ export const FUNCTION_NODE_DOC: NodeDoc = {
     doubled: 20,
   },
   tips: [
+    'Use global `config` for secrets: config.token, config["API_KEY"]. Add keys in Config Store (toolbar).',
     'Set `returnValue` to control what the next node receives. If you do not set it, the flow stops at this node.',
     'Return an object to define the entire output: returnValue = { ...input, doubled: input.value * 2 };',
     'Return a primitive or array and it appears as output.value for the next node.',

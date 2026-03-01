@@ -1,5 +1,5 @@
 // Centralized theme constants — change PRIMARY here to update everywhere
-export const PRIMARY = '#375745';
+export const PRIMARY = '#274c77';
 
 import { theme } from 'antd';
 

@@ -81,6 +81,71 @@ export const importWorkflow = (data: any) => api.post<Workflow>('/workflows/impo
 // Executions
 export const executeWorkflow = (id: number) => api.post(`/workflows/${id}/execute`);
 export const getExecutions = (workflowId: number) => api.get<Execution[]>(`/workflows/${workflowId}/executions`);
+/** Debug run: POST and stream SSE events. Calls onEvent for each event, onDone when stream ends. */
+export async function executeWorkflowDebug(
+  workflowId: number,
+  onEvent: (ev: DebugEvent) => void,
+  onDone: () => void,
+  onError: (err: string) => void
+): Promise<void> {
+  const baseURL = api.defaults.baseURL || '';
+  const url = baseURL.startsWith('http') ? `${baseURL}/workflows/${workflowId}/execute/debug` : `${window.location.origin}${baseURL}/workflows/${workflowId}/execute/debug`;
+  const res = await fetch(url, { method: 'POST', headers: { Accept: 'text/event-stream' } });
+  if (!res.ok) {
+    onError(res.statusText || 'Request failed');
+    onDone();
+    return;
+  }
+  const reader = res.body?.getReader();
+  if (!reader) {
+    onError('No response body');
+    onDone();
+    return;
+  }
+  const dec = new TextDecoder();
+  let buf = '';
+  const parseDataLine = (line: string): void => {
+    if (!line.startsWith('data: ')) return;
+    const raw = line.slice(6).replace(/\r$/, '').trim();
+    if (!raw) return;
+    try {
+      const ev = JSON.parse(raw) as DebugEvent;
+      onEvent(ev);
+    } catch {
+      // skip malformed
+    }
+  };
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split(/\r?\n/);
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        parseDataLine(line);
+      }
+    }
+    if (buf.length > 0) parseDataLine(buf);
+  } catch (e) {
+    onError(e instanceof Error ? e.message : 'Stream error');
+  } finally {
+    onDone();
+  }
+}
+
+export interface DebugEvent {
+  executionId: number;
+  event: string;
+  nodeId?: string;
+  nodeType?: string;
+  nodeLabel?: string;
+  status: string;
+  input?: string;
+  output?: string;
+  error?: string;
+  executedAt: string;
+}
 export const getExecution = (id: number) => api.get<Execution>(`/executions/${id}`);
 export const getExecutionLogs = (id: number) => api.get<ExecutionLog[]>(`/executions/${id}/logs`);
 
@@ -176,6 +241,34 @@ export const createHttpTrigger = (data: Partial<HttpTrigger>) =>
 export const updateHttpTrigger = (id: number, data: Partial<HttpTrigger>) =>
   api.put<HttpTrigger>(`/http-triggers/${id}`, data);
 export const deleteHttpTrigger = (id: number) => api.delete(`/http-triggers/${id}`);
+
+// Config Store (key-value for secrets, tokens)
+export interface ConfigStoreEntryMasked {
+  key: string;
+  value: string; // masked as ******** in list
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConfigStoreEntryFull {
+  key: string;
+  value: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getConfigStoreList = () =>
+  api.get<ConfigStoreEntryMasked[]>('/config-store');
+export const getConfigStoreEntry = (key: string) =>
+  api.get<ConfigStoreEntryFull>(`/config-store/${encodeURIComponent(key)}`);
+export const setConfigStoreEntry = (data: { key: string; value: string; description?: string }) =>
+  api.post('/config-store', data);
+export const updateConfigStoreEntry = (data: { key: string; value: string; description?: string }) =>
+  api.put('/config-store', data);
+export const deleteConfigStoreEntry = (key: string) =>
+  api.delete(`/config-store/${encodeURIComponent(key)}`);
 
 export default api;
 

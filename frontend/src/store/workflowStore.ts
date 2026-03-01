@@ -39,6 +39,11 @@ import {
   createHttpTrigger,
   updateHttpTrigger as updateHttpTriggerApi,
   deleteHttpTrigger as deleteHttpTriggerApi,
+  getConfigStoreList,
+  getConfigStoreEntry,
+  setConfigStoreEntry as setConfigStoreEntryApi,
+  updateConfigStoreEntry as updateConfigStoreEntryApi,
+  deleteConfigStoreEntry as deleteConfigStoreEntryApi,
   type Workflow,
   type Execution,
   type ExecutionLog,
@@ -47,6 +52,7 @@ import {
   type RedisSubscription,
   type EmailTrigger,
   type HttpTrigger,
+  type ConfigStoreEntryMasked,
 } from '../api/client';
 
 interface OpenTab {
@@ -79,6 +85,8 @@ interface WorkflowState {
   executions: Execution[];
   executionLogs: ExecutionLog[];
   showExecutionPanel: boolean;
+  executionPanelTab: 'history' | 'debug';
+  debugRunTrigger: number | null; // workflow id to start debug run when panel opens
 
   // Config state
   configs: NodeConfig[];
@@ -94,6 +102,9 @@ interface WorkflowState {
 
   // HTTP trigger state
   httpTriggers: HttpTrigger[];
+
+  // Config store state (key-value secrets/tokens)
+  configStoreEntries: ConfigStoreEntryMasked[];
 
   // Getters
   getSelectedNode: () => Node | null;
@@ -126,6 +137,8 @@ interface WorkflowState {
   fetchExecutionsForFlow: (workflowId: string) => Promise<Execution[]>;
   fetchExecutionLogs: (executionId: number) => Promise<void>;
   setShowExecutionPanel: (show: boolean) => void;
+  setExecutionPanelTab: (tab: 'history' | 'debug') => void;
+  setDebugRunTrigger: (workflowId: number | null) => void;
 
   // Actions - configs
   fetchConfigs: (type?: string) => Promise<void>;
@@ -156,6 +169,11 @@ interface WorkflowState {
   addHttpTrigger: (data: Partial<HttpTrigger>) => Promise<void>;
   editHttpTrigger: (id: number, data: Partial<HttpTrigger>) => Promise<void>;
   removeHttpTrigger: (id: number) => Promise<void>;
+
+  // Actions - config store
+  fetchConfigStore: () => Promise<void>;
+  setConfigStoreEntry: (data: { key: string; value: string; description?: string }) => Promise<void>;
+  removeConfigStoreEntry: (key: string) => Promise<void>;
 }
 
 // --- LocalStorage persistence for tabs ---
@@ -199,11 +217,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   executions: [],
   executionLogs: [],
   showExecutionPanel: false,
+  executionPanelTab: 'history',
+  debugRunTrigger: null,
   configs: [],
   schedules: [],
   redisSubs: [],
   emailTriggers: [],
   httpTriggers: [],
+  configStoreEntries: [],
 
   getSelectedNode: () => {
     const { nodes, selectedNodeId } = get();
@@ -522,6 +543,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   setShowExecutionPanel: (show: boolean) => set({ showExecutionPanel: show }),
+  setExecutionPanelTab: (tab: 'history' | 'debug') => set({ executionPanelTab: tab }),
+  setDebugRunTrigger: (workflowId: number | null) => set({ debugRunTrigger: workflowId }),
 
   // Config actions
   fetchConfigs: async (type?: string) => {
@@ -623,6 +646,20 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   removeHttpTrigger: async (id: number) => {
     await deleteHttpTriggerApi(id);
     await get().fetchHttpTriggers();
+  },
+
+  // Config store actions
+  fetchConfigStore: async () => {
+    const res = await getConfigStoreList();
+    set({ configStoreEntries: res.data || [] });
+  },
+  setConfigStoreEntry: async (data: { key: string; value: string; description?: string }) => {
+    await setConfigStoreEntryApi(data);
+    await get().fetchConfigStore();
+  },
+  removeConfigStoreEntry: async (key: string) => {
+    await deleteConfigStoreEntryApi(key);
+    await get().fetchConfigStore();
   },
 }));
 

@@ -32,9 +32,10 @@ const DETAIL_MAX = 600;
 const DETAIL_DEFAULT = 320;
 
 /* ── Draggable vertical divider ── */
-function VDivider({ onDrag }: { onDrag: (delta: number) => void }) {
+function VDivider({ onDrag, darkMode }: { onDrag: (delta: number) => void; darkMode?: boolean }) {
   const dragging = useRef(false);
   const lastX = useRef(0);
+  const dividerBg = darkMode ? '#2e3138' : '#d8dde6';
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,15 +73,19 @@ function VDivider({ onDrag }: { onDrag: (delta: number) => void }) {
         justifyContent: 'center',
         zIndex: 5,
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = '#d8dde6')}
+      onMouseEnter={(e) => (e.currentTarget.style.background = dividerBg)}
       onMouseLeave={(e) => { if (!dragging.current) e.currentTarget.style.background = 'transparent'; }}
     >
-      <div style={{ width: 1, height: '60%', background: '#d8dde6', borderRadius: 1 }} />
+      <div style={{ width: 1, height: '60%', background: dividerBg, borderRadius: 1 }} />
     </div>
   );
 }
 
-export default function ExecutionHistory() {
+interface ExecutionHistoryProps {
+  darkMode?: boolean;
+}
+
+export default function ExecutionHistory({ darkMode = false }: ExecutionHistoryProps) {
   const {
     currentWorkflow,
     executions,
@@ -148,11 +153,20 @@ export default function ExecutionHistory() {
     return <div style={{ padding: 12 }}><Empty description="Select a workflow" image={Empty.PRESENTED_IMAGE_SIMPLE} /></div>;
   }
 
+  const textHeading = darkMode ? '#e2e8f0' : '#16325c';
+  const cardBg = darkMode ? '#2b2d33' : '#fff';
+  const cardBgSelected = darkMode ? '#252729' : '#e6f7ff';
+  const detailBg = darkMode ? '#2b2d33' : '#fafafa';
+  const detailLabelBg = darkMode ? '#252729' : '#f5f5f5';
+  const preBg = darkMode ? '#14161a' : '#fff';
+  const preBorder = darkMode ? '#2e3138' : '#e8e8e8';
+  const closeColor = darkMode ? '#8b95a5' : '#706e6b';
+
   return (
-    <div style={{ padding: '4px 0 4px 12px', display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div style={{ padding: '4px 0 4px 12px', display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden' }}>
       {/* Executions list */}
-      <div style={{ width: execWidth, overflowY: 'auto', flexShrink: 0 }}>
-        <Text strong style={{ fontSize: 11, marginBottom: 4, display: 'block', color: '#16325c' }}>Executions</Text>
+      <div style={{ width: execWidth, flexShrink: 0, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
+        <Text strong style={{ fontSize: 11, marginBottom: 4, display: 'block', color: textHeading }}>Executions</Text>
         {executions.length === 0 && <Empty description="No runs yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         {executions.map((exec) => (
           <Card
@@ -162,7 +176,7 @@ export default function ExecutionHistory() {
               marginBottom: 3,
               cursor: 'pointer',
               borderLeft: `3px solid ${exec.status === 'completed' ? '#52c41a' : exec.status === 'running' ? '#faad14' : '#ff4d4f'}`,
-              background: selectedExecId === exec.id ? '#e6f7ff' : '#fff',
+              background: selectedExecId === exec.id ? cardBgSelected : cardBg,
             }}
             styles={{ body: { padding: '4px 6px' } }}
             onClick={() => fetchExecutionLogs(exec.id)}
@@ -185,15 +199,15 @@ export default function ExecutionHistory() {
       </div>
 
       {/* Resizable divider: executions ↔ timeline */}
-      <VDivider onDrag={onExecDrag} />
+      <VDivider onDrag={onExecDrag} darkMode={darkMode} />
 
       {/* Execution timeline */}
-      <div style={{ flex: 1, overflowY: 'auto', minWidth: 0, padding: '0 8px' }}>
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '0 8px' }}>
         {executionLogs.length === 0 ? (
           <Empty description="Click an execution to view logs" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <>
-            <Text strong style={{ fontSize: 11, marginBottom: 4, display: 'block', color: '#16325c' }}>
+            <Text strong style={{ fontSize: 11, marginBottom: 4, display: 'block', color: textHeading }}>
               Timeline — Execution #{selectedExecId}
             </Text>
             <Timeline
@@ -206,14 +220,14 @@ export default function ExecutionHistory() {
                       cursor: 'pointer',
                       padding: '3px 6px',
                       borderRadius: 4,
-                      background: selectedLog?.id === log.id ? '#e6f7ff' : 'transparent',
-                      border: selectedLog?.id === log.id ? '1px solid #91d5ff' : '1px solid transparent',
+                      background: selectedLog?.id === log.id ? (darkMode ? '#252729' : '#e6f7ff') : 'transparent',
+                      border: selectedLog?.id === log.id ? `1px solid ${darkMode ? '#3c3f47' : '#91d5ff'}` : '1px solid transparent',
                       transition: 'all 0.15s',
                     }}
                     onClick={() => setSelectedLog(log)}
                     onMouseEnter={(e) => {
                       if (selectedLog?.id !== log.id) {
-                        e.currentTarget.style.background = '#f0f5ff';
+                        e.currentTarget.style.background = darkMode ? '#252729' : '#f0f5ff';
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -246,7 +260,7 @@ export default function ExecutionHistory() {
       </div>
 
       {/* Resizable divider: timeline ↔ detail (only when detail is open) */}
-      {selectedLog && <VDivider onDrag={onDetailDrag} />}
+      {selectedLog && <VDivider onDrag={onDetailDrag} darkMode={darkMode} />}
 
       {/* Detail panel on the right */}
       {selectedLog && (
@@ -254,16 +268,18 @@ export default function ExecutionHistory() {
           style={{
             width: detailWidth,
             flexShrink: 0,
+            minHeight: 0,
             overflowY: 'auto',
+            overflowX: 'hidden',
             padding: '4px 8px',
-            background: '#fafafa',
+            background: detailBg,
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <Text strong style={{ fontSize: 11, color: '#16325c' }}>Node Detail</Text>
+            <Text strong style={{ fontSize: 11, color: textHeading }}>Node Detail</Text>
             <span
               onClick={() => setSelectedLog(null)}
-              style={{ cursor: 'pointer', fontSize: 12, color: '#706e6b', lineHeight: 1 }}
+              style={{ cursor: 'pointer', fontSize: 12, color: closeColor, lineHeight: 1 }}
             >✕</span>
           </div>
 
@@ -271,7 +287,7 @@ export default function ExecutionHistory() {
             size="small"
             column={1}
             bordered
-            labelStyle={{ fontSize: 10, padding: '3px 6px', background: '#f5f5f5', width: 70 }}
+            labelStyle={{ fontSize: 10, padding: '3px 6px', background: detailLabelBg, width: 70 }}
             contentStyle={{ fontSize: 10, padding: '3px 6px' }}
           >
             <Descriptions.Item label="Node">{selectedLog.nodeId}</Descriptions.Item>
@@ -310,12 +326,13 @@ export default function ExecutionHistory() {
                         fontSize: 10,
                         maxHeight: 200,
                         overflow: 'auto',
-                        background: '#fff',
+                        background: preBg,
                         padding: 6,
                         borderRadius: 4,
-                        border: '1px solid #e8e8e8',
+                        border: `1px solid ${preBorder}`,
                         whiteSpace: 'pre-wrap',
                         wordBreak: 'break-all',
+                        color: darkMode ? '#c3cbd8' : undefined,
                       }}>
                         {formatJSON(selectedLog.input)}
                       </pre>
@@ -332,12 +349,13 @@ export default function ExecutionHistory() {
                         fontSize: 10,
                         maxHeight: 200,
                         overflow: 'auto',
-                        background: '#fff',
+                        background: preBg,
                         padding: 6,
                         borderRadius: 4,
-                        border: '1px solid #e8e8e8',
+                        border: `1px solid ${preBorder}`,
                         whiteSpace: 'pre-wrap',
                         wordBreak: 'break-all',
+                        color: darkMode ? '#c3cbd8' : undefined,
                       }}>
                         {formatJSON(selectedLog.output)}
                       </pre>

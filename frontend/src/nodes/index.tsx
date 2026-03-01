@@ -18,6 +18,9 @@ import {
   ApartmentOutlined,
   PartitionOutlined,
   CloudServerOutlined,
+  ForwardOutlined,
+  ApiOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { PRIMARY } from '../theme';
 
@@ -371,6 +374,55 @@ function SubFlowNode({ data }: NodeProps) {
   );
 }
 
+function ContinueNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  return (
+    <FlowNode
+      icon={<ForwardOutlined />}
+      bg="#16a085"
+      label={(data as any).label || 'Continue'}
+      subtitle={props.after_node_label ? `after: ${props.after_node_label}` : 'after node'}
+    />
+  );
+}
+
+function GraphQLNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  const url = (props.url as string) || '';
+  return (
+    <FlowNode
+      icon={<ApiOutlined />}
+      bg="#e535ab"
+      label={(data as any).label || 'GraphQL'}
+      subtitle={url ? url.replace(/^https?:\/\//, '').substring(0, 24) : 'endpoint'}
+    />
+  );
+}
+
+function GetConfigStoreNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  return (
+    <FlowNode
+      icon={<SafetyCertificateOutlined />}
+      bg="#16a085"
+      label={(data as any).label || 'Get Config Store'}
+      subtitle={(props.key as string) || 'key'}
+    />
+  );
+}
+
+function SetConfigStoreNode({ data }: NodeProps) {
+  const props = (data as any).properties || {};
+  return (
+    <FlowNode
+      icon={<SafetyCertificateOutlined />}
+      bg="#1abc9c"
+      label={(data as any).label || 'Set Config Store'}
+      subtitle={(props.key as string) || 'key'}
+    />
+  );
+}
+
 export const nodeTypes = {
   start: StartNode,
   end: EndNode,
@@ -394,4 +446,8 @@ export const nodeTypes = {
   http_out: HttpOutNode,
   switch: SwitchNode,
   flow: SubFlowNode,
+  continue: ContinueNode,
+  graphql: GraphQLNode,
+  get_config_store: GetConfigStoreNode,
+  set_config_store: SetConfigStoreNode,
 };

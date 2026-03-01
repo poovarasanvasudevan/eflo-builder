@@ -47,12 +47,12 @@ body {
 }
 
 /* Splunk-style focus ring */
-.ant-btn:focus-visible,
+/* .ant-btn:focus-visible,
 .ant-input:focus,
 .ant-select-focused .ant-select-selector {
     outline: 1px solid #5cc05c !important;
     box-shadow: 0 0 0 2px rgba(92, 192, 92, 0.15) !important;
-}
+} */
 
 /* Panel/Card headers */
 .ant-card-head {
@@ -74,3 +74,31 @@ body {
 
 /*.ant-modal .ant-modal-container { padding: 0 }*/
 /*.ant-modal .ant-modal-header { padding: 8px 16px;}*/
+
+
+.app-root-dark .sidebar-item {
+    background: #1f2227;
+    color: #c3cbd8;
+}
+.app-root-dark .sidebar-item:hover {
+    background: #252729;
+
+    color: #c3cbd8;
+}
+.app-root-dark .sidebar-item-active {
+    background: #252729;
+    color: #c3cbd8;
+}
+
+.app-root-light .sidebar-item {
+    background: #ffffff;
+    color: #16325c;
+}
+.app-root-light .sidebar-item:hover {
+    background: #f0f0f0;
+    color: #16325c;
+}
+.app-root-light .sidebar-item-active {
+    background: #f0f0f0;
+    color: #16325c;
+}

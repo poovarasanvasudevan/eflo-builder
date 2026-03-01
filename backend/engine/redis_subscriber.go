@@ -201,7 +201,7 @@ func (rs *RedisSubscriber) handleMessage(subID, workflowID int64, channel string
 		"pattern":        msg.Pattern,
 		"subscriptionId": subID,
 		"receivedAt":     time.Now().Format(time.RFC3339),
-	}, nil)
+	}, nil, nil)
 
 	if err != nil {
 		log.Printf("[RedisSubscriber] Workflow %d execution failed (exec %d): %v", workflowID, execID, err)

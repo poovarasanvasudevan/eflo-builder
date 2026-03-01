@@ -74,6 +74,11 @@ export default function NodeConfigPanel() {
         {(() => {
           const NodeConfig = getNodeConfigComponent(nodeType);
           if (!NodeConfig) return null;
+          const workflowNodes = (nodes ?? []).map((n) => ({
+            id: n.id,
+            type: n.type ?? undefined,
+            label: (n.data as { label?: string })?.label ?? undefined,
+          }));
           return (
             <NodeConfig
               nodeId={selectedNode.id}
@@ -84,6 +89,7 @@ export default function NodeConfigPanel() {
               configs={configs}
               workflows={workflows ?? []}
               currentWorkflowId={currentWorkflow?.id ?? null}
+              workflowNodes={workflowNodes}
             />
           );
         })()}

@@ -22,6 +22,10 @@ import HttpInNodeConfig, { HTTP_IN_NODE_DOC } from './HttpInNodeConfig';
 import HttpOutNodeConfig, { HTTP_OUT_NODE_DOC } from './HttpOutNodeConfig';
 import SwitchNodeConfig, { SWITCH_NODE_DOC } from './SwitchNodeConfig';
 import FlowNodeConfig, { FLOW_NODE_DOC } from './FlowNodeConfig';
+import ContinueNodeConfig, { CONTINUE_NODE_DOC } from './ContinueNodeConfig';
+import GraphQLNodeConfig, { GRAPHQL_NODE_DOC } from './GraphQLNodeConfig';
+import GetConfigStoreNodeConfig, { GET_CONFIG_STORE_NODE_DOC } from './GetConfigStoreNodeConfig';
+import SetConfigStoreNodeConfig, { SET_CONFIG_STORE_NODE_DOC } from './SetConfigStoreNodeConfig';
 
 export type NodeConfigComponent = ComponentType<NodeConfigProps>;
 export type { NodeDoc } from './types';
@@ -49,6 +53,10 @@ export const NODE_CONFIG_MAP: Record<string, NodeConfigComponent> = {
   http_out: HttpOutNodeConfig,
   switch: SwitchNodeConfig,
   flow: FlowNodeConfig,
+  continue: ContinueNodeConfig,
+  graphql: GraphQLNodeConfig,
+  get_config_store: GetConfigStoreNodeConfig,
+  set_config_store: SetConfigStoreNodeConfig,
 };
 
 export const NODE_DOCS: Record<string, NodeDoc> = {
@@ -74,6 +82,10 @@ export const NODE_DOCS: Record<string, NodeDoc> = {
   http_out: HTTP_OUT_NODE_DOC,
   switch: SWITCH_NODE_DOC,
   flow: FLOW_NODE_DOC,
+  continue: CONTINUE_NODE_DOC,
+  graphql: GRAPHQL_NODE_DOC,
+  get_config_store: GET_CONFIG_STORE_NODE_DOC,
+  set_config_store: SET_CONFIG_STORE_NODE_DOC,
 };
 
 export function getNodeConfigComponent(nodeType: string): NodeConfigComponent | null {

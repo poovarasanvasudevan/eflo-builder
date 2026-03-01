@@ -21,6 +21,9 @@ import {
   SearchOutlined,
   PartitionOutlined,
   CloudServerOutlined,
+  ForwardOutlined,
+  ApiOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 import { useWorkflowStore } from '../store/workflowStore';
@@ -48,6 +51,7 @@ const CATEGORIES: { title: string; items: NodeItem[] }[] = [
     items: [
       { type: 'http_in', label: 'HTTP In', icon: <GlobalOutlined />, color: '#fff', bg: '#3498db' },
       { type: 'http_out', label: 'HTTP Out', icon: <GlobalOutlined />, color: '#fff', bg: '#2ecc71' },
+      { type: 'graphql', label: 'GraphQL', icon: <ApiOutlined />, color: '#fff', bg: '#e535ab' },
     ]
   },
   {
@@ -91,9 +95,17 @@ const CATEGORIES: { title: string; items: NodeItem[] }[] = [
     ],
   },
   {
+    title: 'Config Store',
+    items: [
+      { type: 'get_config_store', label: 'Get Config Store', icon: <SafetyCertificateOutlined />, color: '#fff', bg: '#16a085' },
+      { type: 'set_config_store', label: 'Set Config Store', icon: <SafetyCertificateOutlined />, color: '#fff', bg: '#1abc9c' },
+    ],
+  },
+  {
     title: 'Flow',
     items: [
       { type: 'flow', label: 'Sub-Flow', icon: <PartitionOutlined />, color: '#fff', bg: '#1a5276' },
+      { type: 'continue', label: 'Continue', icon: <ForwardOutlined />, color: '#fff', bg: '#16a085' },
       { type: 'end', label: 'End', icon: <StopOutlined />, color: '#fff', bg: '#e8647c' },
     ],
   },
@@ -176,8 +188,7 @@ export default function NodePalette({
                         borderRadius: 4,
                         transition: 'background 0.15s',
                       }}
-                      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.background = '#f3f2f2'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      className='sidebar-item'
                     >
                       <div style={{
                         width: 24,
@@ -246,8 +257,9 @@ export default function NodePalette({
                           borderRadius: 3,
                           transition: 'background 0.15s',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f2f2')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        // onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f2f2')}
+                        // onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        className='sidebar-item'
                       >
                         <div style={{
                           width: 20,
@@ -296,19 +308,16 @@ export default function NodePalette({
                           padding: '5px 6px',
                           cursor: 'pointer',
                           borderRadius: 3,
-                          background: isActive ? '#e8f4fd' : 'transparent',
-                          borderLeft: isActive ? `3px solid ${PRIMARY}` : '3px solid transparent',
+                        
                           transition: 'background 0.15s',
                         }}
-                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#f3f2f2'; }}
-                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                        className='sidebar-item'
                       >
                         <ThunderboltOutlined style={{ fontSize: 12, color: isActive ? PRIMARY : '#706e6b', flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{
                             fontSize: 11,
                             fontWeight: isActive ? 600 : 500,
-                            color: isActive ? PRIMARY : '#16325c',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -318,7 +327,6 @@ export default function NodePalette({
                           {wf.description && (
                             <div style={{
                               fontSize: 9,
-                              color: '#706e6b',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',

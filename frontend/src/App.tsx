@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme, Tabs } from 'antd';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useWorkflowStore, restoreTabsOnStartup } from './store/workflowStore';
 import { PRIMARY, splunkTheme } from './theme';
@@ -8,6 +8,7 @@ import NodePalette from './components/NodePalette';
 import Canvas from './components/Canvas';
 import NodeConfigPanel from './components/NodeConfigPanel';
 import ExecutionHistory from './components/ExecutionHistory';
+import DebugPanel from './components/DebugPanel';
 import './splunkui.css'
 
 const RIGHT_PANEL_MIN = 250;
@@ -19,7 +20,7 @@ const DEBUG_PANEL_MAX = 500;
 const DEBUG_PANEL_DEFAULT = 200;
 
 export default function App() {
-  const { fetchWorkflows, showExecutionPanel, selectedNodeId } = useWorkflowStore();
+  const { fetchWorkflows, showExecutionPanel, selectedNodeId, executionPanelTab, setExecutionPanelTab } = useWorkflowStore();
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [rightPanelWidth, setRightPanelWidth] = useState(RIGHT_PANEL_MIN);
   const [debugPanelHeight, setDebugPanelHeight] = useState(DEBUG_PANEL_DEFAULT);
@@ -28,6 +29,7 @@ export default function App() {
   const [showRedisSubManager, setShowRedisSubManager] = useState(false);
   const [showEmailTriggerManager, setShowEmailTriggerManager] = useState(false);
   const [showHttpTriggerManager, setShowHttpTriggerManager] = useState(false);
+  const [showConfigStoreManager, setShowConfigStoreManager] = useState(false);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
@@ -153,6 +155,8 @@ export default function App() {
             setShowEmailTriggerManager={setShowEmailTriggerManager}
             showHttpTriggerManager={showHttpTriggerManager}
             setShowHttpTriggerManager={setShowHttpTriggerManager}
+            showConfigStoreManager={showConfigStoreManager}
+            setShowConfigStoreManager={setShowConfigStoreManager}
           />
 
 
@@ -162,7 +166,7 @@ export default function App() {
             {toolboxOpen && (
               <div
                 style={{
-                  width: 220,
+                  width: 230,
                   borderRight: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
                   background: darkMode ? '#1f2227' : '#ffffff',
                   overflowY: 'auto',
@@ -264,8 +268,8 @@ export default function App() {
             <div
               style={{
                 height: debugPanelHeight,
-                borderTop: '1px solid #d8dde6',
-                background: '#fff',
+                borderTop: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
+                background: darkMode ? '#1f2227' : '#fff',
                 flexShrink: 0,
                 display: 'flex',
                 flexDirection: 'column',
@@ -281,11 +285,37 @@ export default function App() {
                   flexShrink: 0,
                   zIndex: 10,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#d8dde6')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = darkMode ? '#2e3138' : '#d8dde6')}
                 onMouseLeave={(e) => { if (!isDebugDragging.current) e.currentTarget.style.background = 'transparent'; }}
               />
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <ExecutionHistory />
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Tabs
+                  activeKey={executionPanelTab}
+                  onChange={(k) => setExecutionPanelTab(k as 'history' | 'debug')}
+                  size="small"
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                  tabBarStyle={{ padding: '0 8px', marginBottom: 0 }}
+                  items={[
+                    {
+                      key: 'history',
+                      label: 'History',
+                      children: (
+                        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                          <ExecutionHistory darkMode={darkMode} />
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'debug',
+                      label: 'Debug',
+                      children: (
+                        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                          <DebugPanel darkMode={darkMode} />
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
               </div>
             </div>
           )}

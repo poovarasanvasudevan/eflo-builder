@@ -16,6 +16,7 @@ func NewRouter(
 	execRepo *repository.ExecutionRepo,
 	execLogRepo *repository.ExecutionLogRepo,
 	configRepo *repository.NodeConfigRepo,
+	configStoreRepo *repository.ConfigStoreRepo,
 	cronRepo *repository.CronScheduleRepo,
 	redisSubRepo *repository.RedisSubscriptionRepo,
 	emailTriggerRepo *repository.EmailTriggerRepo,
@@ -48,6 +49,7 @@ func NewRouter(
 		Engine:       eng,
 	}
 	ch := &ConfigHandler{Repo: configRepo}
+	csh := &ConfigStoreHandler{Repo: configStoreRepo}
 	crh := &CronHandler{Repo: cronRepo, Scheduler: scheduler}
 	rsh := &RedisSubHandler{Repo: redisSubRepo, Subscriber: redisSub}
 	eth := &EmailTriggerHandler{Repo: emailTriggerRepo, Poller: emailPoller}
@@ -67,6 +69,7 @@ func NewRouter(
 
 		// Execution
 		r.Post("/workflows/{id}/execute", eh.Execute)
+		r.Post("/workflows/{id}/execute/debug", eh.ExecuteDebug)
 		r.Get("/workflows/{id}/executions", eh.ListByWorkflow)
 		r.Get("/executions/{id}", eh.GetExecution)
 		r.Get("/executions/{id}/logs", eh.GetExecutionLogs)
@@ -77,6 +80,14 @@ func NewRouter(
 		r.Get("/configs/{id}", ch.GetByID)
 		r.Put("/configs/{id}", ch.Update)
 		r.Delete("/configs/{id}", ch.Delete)
+
+		// Config Store (key-value for secrets, tokens)
+		r.Get("/config-store", csh.List)
+		r.Get("/config-store/full", csh.ListFull)  // must be before /config-store/{key}
+		r.Get("/config-store/{key}", csh.Get)
+		r.Post("/config-store", csh.Set)
+		r.Put("/config-store", csh.CreateOrUpdate)
+		r.Delete("/config-store/{key}", csh.Delete)
 
 		// Cron Schedules
 		r.Get("/schedules", crh.List)

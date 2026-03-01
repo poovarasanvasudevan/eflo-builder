@@ -19,11 +19,13 @@ import {
   BugOutlined,
   FileImageFilled,
   BulbOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useWorkflowStore } from '../store/workflowStore';
 import { exportWorkflow } from '../api/client';
 import { PRIMARY } from '../theme';
 import ConfigManager from './ConfigManager';
+import ConfigStoreManager from './ConfigStoreManager';
 import ScheduleManager from './ScheduleManager';
 import RedisSubscriptionManager from './RedisSubscriptionManager';
 import EmailTriggerManager from './EmailTriggerManager';
@@ -46,6 +48,8 @@ interface ToolbarProps {
   setShowEmailTriggerManager: (v: boolean) => void;
   showHttpTriggerManager: boolean;
   setShowHttpTriggerManager: (v: boolean) => void;
+  showConfigStoreManager: boolean;
+  setShowConfigStoreManager: (v: boolean) => void;
 }
 
 export default function Toolbar({
@@ -61,6 +65,8 @@ export default function Toolbar({
   setShowEmailTriggerManager,
   showHttpTriggerManager,
   setShowHttpTriggerManager,
+  showConfigStoreManager,
+  setShowConfigStoreManager,
 }: ToolbarProps) {
   const {
     currentWorkflow,
@@ -73,6 +79,8 @@ export default function Toolbar({
     fetchWorkflows,
     importFlow,
     setShowExecutionPanel,
+    setExecutionPanelTab,
+    setDebugRunTrigger,
     showExecutionPanel,
     openTabs,
     activeTabId,
@@ -133,6 +141,13 @@ export default function Toolbar({
     } catch {
       messageApi.error('Execution failed');
     }
+  };
+
+  const handleDebug = () => {
+    if (!currentWorkflow) return;
+    setShowExecutionPanel(true);
+    setExecutionPanelTab('debug');
+    setDebugRunTrigger(currentWorkflow.id);
   };
 
   const handleExport = async () => {
@@ -233,6 +248,9 @@ export default function Toolbar({
           <Tooltip title="Connection Configs">
             <Button type="text" size="small" icon={<SettingOutlined />} style={{ color: '#fff' }} onClick={() => setShowConfigManager(true)} />
           </Tooltip>
+          <Tooltip title="Config Store (secrets, tokens)">
+            <Button type="text" size="small" icon={<SafetyCertificateOutlined />} style={{ color: '#fff' }} onClick={() => setShowConfigStoreManager(true)} />
+          </Tooltip>
           <Tooltip title="Execution History">
             <Button
               type="text"
@@ -280,7 +298,7 @@ export default function Toolbar({
           <Tooltip title={toolboxOpen ? 'Hide Toolbox' : 'Show Toolbox'}>
             <Button type="text" size="small" icon={<AppstoreOutlined />} style={{ ...iconBtnStyle, color: toolboxOpen ? PRIMARY : '#706e6b' }} onClick={onToggleToolbox} />
           </Tooltip>
-          <Tooltip title="ExecutionHistory"><Button type="text" size="small" icon={<HistoryOutlined />} style={iconBtnStyle} onClick={() => setShowExecutionPanel(!showExecutionPanel)} /></Tooltip>
+          <Tooltip title="Execution History"><Button type="text" size="small" icon={<HistoryOutlined />} style={iconBtnStyle} onClick={() => setShowExecutionPanel(!showExecutionPanel)} /></Tooltip>
         </div>
 
         {/* Left divider */}
@@ -389,7 +407,7 @@ export default function Toolbar({
           )}
           <div style={{ width: 1, height: 14, background: '#d8dde6', margin: '0 2px' }} />
           <Button type="text" size="small" onClick={handleRun} disabled={!currentWorkflow} icon={<PlayCircleOutlined style={{ color: '#389e0d' }} />} style={{ color: '#389e0d', fontWeight: 600, fontSize: 11 }}>Run</Button>
-          <Button type="text" size="small" onClick={handleRun} disabled={!currentWorkflow} icon={<BugOutlined style={{ color: '#d48806' }} />} style={{ color: '#d48806', fontWeight: 600, fontSize: 11 }}>Debug</Button>
+          <Button type="text" size="small" onClick={handleDebug} disabled={!currentWorkflow} icon={<BugOutlined style={{ color: '#d48806' }} />} style={{ color: '#d48806', fontWeight: 600, fontSize: 11 }}>Debug</Button>
           <Button type="text" size="small" onClick={handleExport} disabled={!currentWorkflow} icon={<ExportOutlined style={{ color: '#1677ff' }} />} style={{ color: '#1677ff', fontWeight: 600, fontSize: 11 }}>Export</Button>
           <Button type="text" size="small" onClick={handleImport} icon={<ImportOutlined style={{ color: '#722ed1' }} />} style={{ color: '#722ed1', fontWeight: 600, fontSize: 11 }}>Import</Button>
           <Button type="text" size="small" onClick={handleDelete} disabled={!currentWorkflow} icon={<DeleteOutlined style={{ color: '#cf1322' }} />} style={{ color: '#cf1322', fontWeight: 600, fontSize: 11 }}>Delete</Button>
@@ -408,6 +426,7 @@ export default function Toolbar({
       />
 
       <ConfigManager open={showConfigManager} onClose={() => setShowConfigManager(false)} />
+      <ConfigStoreManager open={showConfigStoreManager} onClose={() => setShowConfigStoreManager(false)} />
       <ScheduleManager open={showScheduleManager} onClose={() => setShowScheduleManager(false)} />
       <RedisSubscriptionManager open={showRedisSubManager} onClose={() => setShowRedisSubManager(false)} />
       <EmailTriggerManager open={showEmailTriggerManager} onClose={() => setShowEmailTriggerManager(false)} />

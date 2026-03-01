@@ -1,3 +1,9 @@
+export interface WorkflowNodeOption {
+  id: string;
+  type?: string;
+  label?: string;
+}
+
 export interface NodeConfigProps {
   nodeId: string;
   nodeType: string;
@@ -7,6 +13,8 @@ export interface NodeConfigProps {
   configs?: Array<{ id: number; name: string; type: string; config?: Record<string, any> }>;
   workflows?: Array<{ id: number; name: string }>;
   currentWorkflowId?: number | null;
+  /** Nodes in the current workflow (for continue node: pick "run after" node) */
+  workflowNodes?: WorkflowNodeOption[];
 }
 
 export interface NodeDoc {

@@ -131,11 +131,13 @@ export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
         style={{ background: '#f4f6f9' }}
         snapToGrid
         snapGrid={[5, 5]}
+        colorMode={darkMode ? 'dark' : 'light'}
       >
-        <Background color="#d8dde6" gap={32} size={1} />
+        {/* <Background color="#d8dde6" gap={32} size={1} /> */}
+        <Background />
         <Controls
           position="bottom-right"
-          style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.1)', borderRadius: 6, border: '1px solid #d8dde6' }}
+          style={{ boxShadow: `0 2px 6px ${darkMode ? '#2e3138' : 'rgba(0,0,0,0.1)'}`, border: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6' }}
         />
       </ReactFlow>
     </div>

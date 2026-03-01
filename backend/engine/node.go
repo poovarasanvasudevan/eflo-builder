@@ -18,8 +18,37 @@ type HttpRun struct {
 type contextKey int
 
 const (
-	httpRunContextKey contextKey = 1
+	httpRunContextKey     contextKey = 1
+	configStoreContextKey contextKey = 2
+	configMapContextKey   contextKey = 3
 )
+
+// ConfigStore provides get/set of key-value config (secrets, tokens) during workflow run.
+type ConfigStore interface {
+	Get(key string) (string, bool, error)
+	Set(key, value, description string) error
+}
+
+// ConfigStoreFromContext returns the ConfigStore for this execution if set.
+func ConfigStoreFromContext(ctx context.Context) ConfigStore {
+	v := ctx.Value(configStoreContextKey)
+	if v == nil {
+		return nil
+	}
+	cs, _ := v.(ConfigStore)
+	return cs
+}
+
+// ConfigMapFromContext returns the config key-value map (from Config Store) for this execution.
+// Use in nodes to access secrets via config["token"] or in placeholders {{config.token}}.
+func ConfigMapFromContext(ctx context.Context) map[string]interface{} {
+	v := ctx.Value(configMapContextKey)
+	if v == nil {
+		return nil
+	}
+	m, _ := v.(map[string]interface{})
+	return m
+}
 
 // ConfigResolver resolves a node config by its ID.
 type ConfigResolver func(configID int64) (*models.NodeConfig, error)

@@ -6,6 +6,7 @@ func RegisterAll() {
 	engine.Register("start", &StartNode{})
 	engine.Register("end", &EndNode{})
 	engine.Register("http_request", &HttpRequestNode{})
+	engine.Register("graphql", &GraphQLNode{})
 	engine.Register("delay", &DelayNode{})
 	engine.Register("condition", &ConditionNode{})
 	engine.Register("log", &LogNode{})
@@ -22,7 +23,10 @@ func RegisterAll() {
 	engine.Register("database", &DatabaseNode{})
 	engine.Register("switch", &SwitchNode{})
 	engine.Register("flow", &FlowNode{})
+	engine.Register("continue", &ContinueNode{})
 	engine.Register("function", &FunctionNode{})
 	engine.Register("http_in", &HttpInNode{})
 	engine.Register("http_out", &HttpOutNode{})
+	engine.Register("get_config_store", &GetConfigStoreNode{})
+	engine.Register("set_config_store", &SetConfigStoreNode{})
 }

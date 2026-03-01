@@ -101,6 +101,14 @@ func RunMigrations(db *sql.DB) error {
 			FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE,
 			UNIQUE KEY uq_http_trigger_path_method (path, method)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		"CREATE TABLE IF NOT EXISTS config_store (" +
+			"`key` VARCHAR(255) NOT NULL PRIMARY KEY," +
+			"value TEXT NOT NULL," +
+			"description VARCHAR(500) DEFAULT ''," +
+			"created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+			"updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 	}
 
 	for _, q := range queries {
