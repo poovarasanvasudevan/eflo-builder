@@ -212,7 +212,7 @@ export default function Toolbar({
         display: 'flex',
         alignItems: 'center',
         padding: '0 12px',
-        height: 36,
+        height: 42,
         background: PRIMARY,
         color: '#fff',
       }}>

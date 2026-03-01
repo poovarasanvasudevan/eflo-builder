@@ -35,6 +35,8 @@ export interface Workflow {
   definition: WorkflowDef;
   createdAt: string;
   updatedAt: string;
+  lastRunAt?: string;
+  avgRunTimeSec?: number;
 }
 
 export interface Execution {
@@ -56,6 +58,22 @@ export interface ExecutionLog {
   output?: string;
   error?: string;
   executedAt: string;
+}
+
+export interface ExecutionDayStat {
+  date: string;
+  count: number;
+  avgDurationSec: number;
+  totalDurationSec: number;
+}
+
+export interface ExecutionStats {
+  totalCount: number;
+  totalDurationSec: number;
+  avgDurationSec: number;
+  minDurationSec: number;
+  maxDurationSec: number;
+  byDay: ExecutionDayStat[];
 }
 
 export interface NodeConfig {
@@ -148,6 +166,8 @@ export interface DebugEvent {
 }
 export const getExecution = (id: number) => api.get<Execution>(`/executions/${id}`);
 export const getExecutionLogs = (id: number) => api.get<ExecutionLog[]>(`/executions/${id}/logs`);
+export const getExecutionStats = (days?: number) =>
+  api.get<ExecutionStats>('/stats/executions', days != null ? { params: { days } } : undefined);
 
 // Node Configs
 export const getConfigs = (type?: string) => api.get<NodeConfig[]>('/configs', { params: type ? { type } : {} });

@@ -14,7 +14,6 @@ import { useWorkflowStore } from '../store/workflowStore';
 import { getConfigStoreEntry, type ConfigStoreEntryMasked } from '../api/client';
 
 const { Text } = Typography;
-const { TextArea } = Input;
 
 interface FormState {
   key: string;

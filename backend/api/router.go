@@ -41,7 +41,7 @@ func NewRouter(
 		MaxAge:           300,
 	}))
 
-	wh := &WorkflowHandler{Repo: workflowRepo}
+	wh := &WorkflowHandler{Repo: workflowRepo, ExecRepo: execRepo}
 	eh := &ExecutionHandler{
 		WorkflowRepo: workflowRepo,
 		ExecRepo:     execRepo,
@@ -73,6 +73,7 @@ func NewRouter(
 		r.Get("/workflows/{id}/executions", eh.ListByWorkflow)
 		r.Get("/executions/{id}", eh.GetExecution)
 		r.Get("/executions/{id}/logs", eh.GetExecutionLogs)
+		r.Get("/stats/executions", eh.Stats)
 
 		// Node Configs
 		r.Get("/configs", ch.List)

@@ -12,7 +12,8 @@ import (
 )
 
 type WorkflowHandler struct {
-	Repo *repository.WorkflowRepo
+	Repo     *repository.WorkflowRepo
+	ExecRepo *repository.ExecutionRepo
 }
 
 func (h *WorkflowHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +21,24 @@ func (h *WorkflowHandler) List(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if h.ExecRepo != nil && len(workflows) > 0 {
+		ids := make([]int64, 0, len(workflows))
+		for _, w := range workflows {
+			ids = append(ids, w.ID)
+		}
+		lastRunMap, err := h.ExecRepo.GetLastRunByWorkflowIDs(ids)
+		if err == nil {
+			for _, w := range workflows {
+				w.LastRunAt = lastRunMap[w.ID]
+			}
+		}
+		avgRunMap, err := h.ExecRepo.GetAvgRunTimeByWorkflowIDs(ids)
+		if err == nil {
+			for _, w := range workflows {
+				w.AvgRunTimeSec = avgRunMap[w.ID]
+			}
+		}
 	}
 	writeJSON(w, http.StatusOK, workflows)
 }

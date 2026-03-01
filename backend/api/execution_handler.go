@@ -11,6 +11,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const defaultStatsDays = 14
+
 type ExecutionHandler struct {
 	WorkflowRepo *repository.WorkflowRepo
 	ExecRepo     *repository.ExecutionRepo
@@ -91,6 +93,45 @@ func (h *ExecutionHandler) GetExecutionLogs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	writeJSON(w, http.StatusOK, logs)
+}
+
+// statsResponse is the JSON response for GET /api/stats/executions.
+type statsResponse struct {
+	TotalCount        int64                     `json:"totalCount"`
+	TotalDurationSec  float64                   `json:"totalDurationSec"`
+	AvgDurationSec    float64                   `json:"avgDurationSec"`
+	MinDurationSec    float64                   `json:"minDurationSec"`
+	MaxDurationSec    float64                   `json:"maxDurationSec"`
+	ByDay             []repository.DayStat      `json:"byDay"`
+}
+
+func (h *ExecutionHandler) Stats(w http.ResponseWriter, r *http.Request) {
+	global, err := h.ExecRepo.GetGlobalStats()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	days := defaultStatsDays
+	if d := r.URL.Query().Get("days"); d != "" {
+		if n, err := strconv.Atoi(d); err == nil && n > 0 && n <= 90 {
+			days = n
+		}
+	}
+	byDay, err := h.ExecRepo.GetStatsByDay(days)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	resp := statsResponse{
+		TotalCount:       global.TotalCount,
+		TotalDurationSec: global.TotalDuration,
+		AvgDurationSec:   global.AvgDuration,
+		MinDurationSec:   global.MinDuration,
+		MaxDurationSec:   global.MaxDuration,
+		ByDay:            byDay,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
 // ExecuteDebug runs the workflow and streams real-time execution events via Server-Sent Events (SSE).
