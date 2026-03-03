@@ -1,10 +1,8 @@
-import { InputNumber, Typography } from 'antd';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-javascript';
 import 'ace-builds/src-noconflict/theme-github';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const FUNCTION_NODE_DOC: NodeDoc = {
   title: 'Function',
@@ -37,7 +35,7 @@ export default function FunctionNodeConfig({ properties, updateProp }: NodeConfi
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>JavaScript Code</Text>
+        <Text strong className="text-[10px] block mb-0.5">JavaScript Code</Text>
         <AceEditor
           mode="javascript"
           theme="github"
@@ -52,19 +50,17 @@ export default function FunctionNodeConfig({ properties, updateProp }: NodeConfi
           style={{ width: '100%', minHeight: 180, borderRadius: 4, border: '1px solid #d9d9d9' }}
           editorProps={{ $blockScrolling: true }}
         />
-        <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
-          Use <code>input</code> for upstream data. Set <code>returnValue</code> for the result.
-        </Text>
+        <Text className="text-[10px] text-[#706e6b] block mt-1">Use <code>input</code> for upstream data. Set <code>returnValue</code> for the result.</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Timeout (ms)</Text>
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
+        <Text strong className="text-[10px] block mb-0.5">Timeout (ms)</Text>
+        <input
+          type="number"
           min={1000}
           max={60000}
-          value={properties.timeoutMs || 10000}
-          onChange={(val) => updateProp('timeoutMs', val)}
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
+          value={properties.timeoutMs ?? 10000}
+          onChange={(e) => updateProp('timeoutMs', e.target.value === '' ? undefined : Number(e.target.value))}
         />
       </div>
     </>

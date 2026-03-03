@@ -1,9 +1,7 @@
-import { Input, Select, InputNumber, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
 import { REDIS_OPERATIONS } from './constants';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const REDIS_NODE_DOC: NodeDoc = {
   title: 'Redis',
@@ -35,120 +33,115 @@ export const REDIS_NODE_DOC: NodeDoc = {
   ],
 };
 
+const FLAT_OPERATIONS = (REDIS_OPERATIONS as { options?: { value: string; label: string }[] }[]).flatMap((g) => g.options ?? []);
+
 export default function RedisNodeConfig({ properties, updateProp, configs }: NodeConfigProps) {
   const redisConfigs = configs?.filter((c) => c.type === 'redis') ?? [];
+  const op = (properties.operation as string) ?? '';
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Server Config</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select Redis server..."
-          value={properties.configId || undefined}
-          onChange={(val) => updateProp('configId', val)}
-          options={redisConfigs.map((c) => ({
-            value: c.id,
-            label: `${c.name} (${c.config?.host || '127.0.0.1'}:${c.config?.port || 6379})`,
-          }))}
-          notFoundContent={
-            <Text type="secondary" style={{ fontSize: 10, padding: 4 }}>
-              No Redis configs. Add one in ⚙ Configs.
-            </Text>
-          }
-        />
+        <Text strong className="text-[10px] block mb-0.5">Server Config</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.configId != null ? String(properties.configId) : ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('configId', e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Select Redis server...</option>
+          {redisConfigs.map((c) => (
+            <option key={c.id} value={c.id}>{c.name} ({(c.config as { host?: string })?.host || '127.0.0.1'}:{(c.config as { port?: number })?.port || 6379})</option>
+          ))}
+        </select>
+        {redisConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b] block mt-0.5">No Redis configs. Add one in ⚙ Configs.</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Operation</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select operation..."
-          value={properties.operation || undefined}
-          onChange={(val) => updateProp('operation', val)}
-          options={REDIS_OPERATIONS}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Operation</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={(properties.operation as string) || ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('operation', e.target.value || undefined)}
+        >
+          <option value="">Select operation...</option>
+          {FLAT_OPERATIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </div>
-      {properties.operation && properties.operation !== 'KEYS' && (
+      {op && op !== 'KEYS' && (
         <div>
-          <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>
-            {properties.operation === 'PUBLISH' ? 'Channel' : 'Key'}
-          </Text>
-          <Input
-            size="small"
-            placeholder={properties.operation === 'PUBLISH' ? 'channel-name' : 'my-key'}
-            value={properties.key || ''}
-            onChange={(e) => updateProp('key', e.target.value)}
+          <Text strong className="text-[10px] block mb-0.5">{op === 'PUBLISH' ? 'Channel' : 'Key'}</Text>
+          <TextField
+            placeholder={op === 'PUBLISH' ? 'channel-name' : 'my-key'}
+            value={(properties.key as string) || ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('key', e.target.value)}
           />
         </div>
       )}
-      {properties.operation === 'KEYS' && (
+      {op === 'KEYS' && (
         <div>
-          <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Pattern</Text>
-          <Input
-            size="small"
+          <Text strong className="text-[10px] block mb-0.5">Pattern</Text>
+          <TextField
             placeholder="user:*"
-            value={properties.key || ''}
-            onChange={(e) => updateProp('key', e.target.value)}
+            value={(properties.key as string) || ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('key', e.target.value)}
           />
         </div>
       )}
-      {['HGET', 'HSET', 'HDEL'].includes(properties.operation) && (
+      {['HGET', 'HSET', 'HDEL'].includes(op) && (
         <div>
-          <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Field</Text>
-          <Input
-            size="small"
+          <Text strong className="text-[10px] block mb-0.5">Field</Text>
+          <TextField
             placeholder="field-name"
-            value={properties.field || ''}
-            onChange={(e) => updateProp('field', e.target.value)}
+            value={(properties.field as string) || ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('field', e.target.value)}
           />
         </div>
       )}
-      {['SET', 'HSET', 'LPUSH', 'RPUSH', 'SADD', 'PUBLISH'].includes((properties.operation as string) ?? '') && (
+      {['SET', 'HSET', 'LPUSH', 'RPUSH', 'SADD', 'PUBLISH'].includes(op) && (
         <div>
-          <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Value</Text>
-          <TextArea
-            size="small"
-            rows={2}
+          <Text strong className="text-[10px] block mb-0.5">Value</Text>
+          <textarea
+            className="w-full min-h-[40px] p-2 border border-[#dfe1e6] rounded text-xs resize-y"
             placeholder="value"
-            value={properties.value || ''}
-            onChange={(e) => updateProp('value', e.target.value)}
+            value={(properties.value as string) || ''}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateProp('value', e.target.value)}
+            rows={2}
           />
         </div>
       )}
-      {['SET', 'EXPIRE'].includes((properties.operation as string) ?? '') && (
+      {['SET', 'EXPIRE'].includes(op) && (
         <div>
-          <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>TTL (ms)</Text>
-          <InputNumber
-            size="small"
-            style={{ width: '100%' }}
+          <Text strong className="text-[10px] block mb-0.5">TTL (ms)</Text>
+          <input
+            type="number"
             min={0}
+            className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
             placeholder="0 = no expiry"
-            value={(properties.ttl as number | undefined) ?? undefined}
-            onChange={(val) => updateProp('ttl', val)}
+            value={(properties.ttl as number | undefined) ?? ''}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('ttl', e.target.value === '' ? undefined : Number(e.target.value))}
           />
         </div>
       )}
-      {properties.operation === 'LRANGE' && (
+      {op === 'LRANGE' && (
         <>
           <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Start Index</Text>
-            <InputNumber
-              size="small"
-              style={{ width: '100%' }}
+            <Text strong className="text-[10px] block mb-0.5">Start Index</Text>
+            <input
+              type="number"
+              className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
               value={properties.start ?? 0}
-              onChange={(val) => updateProp('start', val)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('start', Number(e.target.value))}
             />
           </div>
           <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Stop Index</Text>
-            <InputNumber
-              size="small"
-              style={{ width: '100%' }}
+            <Text strong className="text-[10px] block mb-0.5">Stop Index</Text>
+            <input
+              type="number"
+              className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
               value={properties.stop ?? -1}
-              onChange={(val) => updateProp('stop', val)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('stop', Number(e.target.value))}
             />
-            <Text type="secondary" style={{ fontSize: 10 }}>-1 = all elements</Text>
+            <Text className="text-[10px] text-[#706e6b]">-1 = all elements</Text>
           </div>
         </>
       )}

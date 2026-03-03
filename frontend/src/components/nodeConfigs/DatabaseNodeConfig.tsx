@@ -1,10 +1,8 @@
-import { Select, InputNumber, Typography } from 'antd';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-sql';
 import 'ace-builds/src-noconflict/theme-github';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const DATABASE_NODE_DOC: NodeDoc = {
   title: 'Database',
@@ -39,36 +37,29 @@ export default function DatabaseNodeConfig({ properties, updateProp, configs }: 
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Database Config</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select database..."
-          value={properties.configId ?? undefined}
-          onChange={(val) => updateProp('configId', val)}
-          options={dbConfigs.map((c) => ({
-            value: c.id,
-            label: `${c.name} (${c.config?.driver || 'mysql'}: ${c.config?.host || ''}:${c.config?.port ?? 3306}/${c.config?.database || ''})`,
-          }))}
-          notFoundContent={
-            <Text type="secondary" style={{ fontSize: 10, padding: 4 }}>
-              No database configs. Add one in ⚙ Configs.
-            </Text>
-          }
-        />
+        <Text strong className="text-[10px] block mb-0.5">Database Config</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.configId != null ? String(properties.configId) : ''}
+          onChange={(e) => updateProp('configId', e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Select database...</option>
+          {dbConfigs.map((c) => (
+            <option key={c.id} value={c.id}>{c.name} ({(c.config as { driver?: string; host?: string; port?: number; database?: string })?.driver || 'mysql'}: {(c.config as { host?: string })?.host || ''}:{(c.config as { port?: number })?.port ?? 3306}/{(c.config as { database?: string })?.database || ''})</option>
+          ))}
+        </select>
+        {dbConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b] block mt-0.5">No database configs. Add one in ⚙ Configs.</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Mode</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          value={properties.mode ?? 'query'}
-          onChange={(val) => updateProp('mode', val)}
-          options={[
-            { value: 'query', label: 'Query (SELECT, INSERT, UPDATE, etc.)' },
-            { value: 'procedure', label: 'Procedure (CALL / EXEC)' },
-          ]}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Mode</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={(properties.mode as string) ?? 'query'}
+          onChange={(e) => updateProp('mode', e.target.value)}
+        >
+          <option value="query">Query (SELECT, INSERT, UPDATE, etc.)</option>
+          <option value="procedure">Procedure (CALL / EXEC)</option>
+        </select>
       </div>
       <div>
         <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>SQL</Text>
@@ -86,19 +77,17 @@ export default function DatabaseNodeConfig({ properties, updateProp, configs }: 
           style={{ width: '100%', minHeight: 180, borderRadius: 4, border: '1px solid #d9d9d9' }}
           editorProps={{ $blockScrolling: true }}
         />
-        <Text type="secondary" style={{ fontSize: 9, display: 'block', marginTop: 4 }}>
-          Use {'{{key}}'} or {'{{input.key}}'} to inject values from the previous node (e.g. {'{{userId}}'}, {'{{input.orderId}}'}).
-        </Text>
+        <Text className="text-[9px] text-[#706e6b] block mt-1">Use {'{{key}}'} or {'{{input.key}}'} to inject values from the previous node (e.g. {'{{userId}}'}, {'{{input.orderId}}'}).</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Timeout (ms)</Text>
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
+        <Text strong className="text-[10px] block mb-0.5">Timeout (ms)</Text>
+        <input
+          type="number"
           min={1000}
           max={300000}
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
           value={properties.timeoutMs ?? 30000}
-          onChange={(val) => updateProp('timeoutMs', val)}
+          onChange={(e) => updateProp('timeoutMs', e.target.value === '' ? undefined : Number(e.target.value))}
         />
       </div>
     </>

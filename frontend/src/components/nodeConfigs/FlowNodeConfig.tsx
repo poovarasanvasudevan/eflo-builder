@@ -1,7 +1,5 @@
-import { Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const FLOW_NODE_DOC: NodeDoc = {
   title: 'Sub-Flow',
@@ -47,45 +45,35 @@ export default function FlowNodeConfig({
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Target Workflow</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select a workflow to run"
-          value={properties.workflow_id ?? undefined}
-          onChange={(val) => {
+        <Text strong className="text-[10px] block mb-0.5">Target Workflow</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.workflow_id != null ? String(properties.workflow_id) : ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            const val = e.target.value === '' ? undefined : Number(e.target.value);
             const wf = workflows.find((w) => w.id === val);
             updateProp('workflow_id', val);
             if (wf) updateProp('workflow_name', wf.name);
           }}
-          options={options}
-          showSearch
-          optionFilterProp="label"
-          allowClear
-          onClear={() => {
-            updateProp('workflow_id', undefined);
-            updateProp('workflow_name', undefined);
-          }}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          The selected workflow will be executed as a sub-flow. Current workflow is excluded.
-        </Text>
+        >
+          <option value="">Select a workflow to run</option>
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        <Text className="text-[9px] text-[#706e6b]">The selected workflow will be executed as a sub-flow. Current workflow is excluded.</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Pass Input to Sub-Flow</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
+        <Text strong className="text-[10px] block mb-0.5">Pass Input to Sub-Flow</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
           value={properties.pass_input ? 'yes' : 'no'}
-          onChange={(val) => updateProp('pass_input', val === 'yes')}
-          options={[
-            { value: 'yes', label: 'Yes — forward all input data' },
-            { value: 'no', label: 'No — start sub-flow with empty input' },
-          ]}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          When enabled, all data from upstream nodes is passed as input to the sub-flow's start node.
-        </Text>
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('pass_input', e.target.value === 'yes')}
+        >
+          <option value="yes">Yes — forward all input data</option>
+          <option value="no">No — start sub-flow with empty input</option>
+        </select>
+        <Text className="text-[9px] text-[#706e6b]">When enabled, all data from upstream nodes is passed as input to the sub-flow's start node.</Text>
       </div>
     </>
   );

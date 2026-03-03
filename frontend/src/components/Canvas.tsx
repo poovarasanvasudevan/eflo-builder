@@ -1,12 +1,15 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   type ReactFlowInstance,
+  type Edge,
   ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import ModalDialog, { ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+import Button from '@atlaskit/button';
 
 import { useWorkflowStore } from '../store/workflowStore';
 import { nodeTypes } from '../nodes';
@@ -33,8 +36,11 @@ export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
     onConnect,
     addNode,
     setSelectedNodeId,
+    setEdges,
     currentWorkflow,
   } = useWorkflowStore();
+
+  const [edgeCommentModal, setEdgeCommentModal] = useState<{ edge: Edge; description: string } | null>(null);
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstance.current = instance;
@@ -50,6 +56,25 @@ export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
   }, [setSelectedNodeId]);
+
+  const onEdgeDoubleClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => {
+      const desc = (edge.data as { description?: string } | undefined)?.description ?? '';
+      setEdgeCommentModal({ edge, description: desc });
+    },
+    []
+  );
+
+  const saveEdgeComment = useCallback(() => {
+    if (!edgeCommentModal) return;
+    const { edge, description } = edgeCommentModal;
+    setEdges(
+      edges.map((e) =>
+        e.id === edge.id ? { ...e, data: { ...e.data, description } } : e
+      )
+    );
+    setEdgeCommentModal(null);
+  }, [edgeCommentModal, edges, setEdges]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -117,6 +142,7 @@ export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
         onInit={onInit}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
@@ -135,6 +161,35 @@ export default function Canvas({ darkMode = false }: { darkMode?: boolean }) {
       >
         {/* <Background color="#d8dde6" gap={32} size={1} /> */}
         <Background />
+        {edgeCommentModal && (
+          <ModalDialog onClose={() => setEdgeCommentModal(null)}>
+            <ModalHeader>
+              <ModalTitle>Edge description / comment</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-xs text-neutral-500 mb-2">
+                Add a description or comment for this connection (e.g. when to take this path).
+              </p>
+              <textarea
+                className="w-full min-h-[80px] p-2 border border-[#dfe1e6] rounded text-sm resize-y"
+                placeholder="Describe when this edge is used..."
+                value={edgeCommentModal.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setEdgeCommentModal((prev) => (prev ? { ...prev, description: e.target.value } : null))
+                }
+                rows={4}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button appearance="primary" onClick={saveEdgeComment}>
+                Save
+              </Button>
+              <Button appearance="subtle" onClick={() => setEdgeCommentModal(null)}>
+                Cancel
+              </Button>
+            </ModalFooter>
+          </ModalDialog>
+        )}
         <Controls
           position="bottom-right"
           style={{ boxShadow: `0 2px 6px ${darkMode ? '#2e3138' : 'rgba(0,0,0,0.1)'}`, border: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6' }}

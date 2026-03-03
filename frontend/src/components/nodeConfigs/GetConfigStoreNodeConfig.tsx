@@ -1,7 +1,6 @@
-import { Input, Typography } from 'antd';
+import TextField from '@atlaskit/textfield';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const GET_CONFIG_STORE_NODE_DOC: NodeDoc = {
   title: 'Get Config Store',
@@ -22,13 +21,12 @@ export const GET_CONFIG_STORE_NODE_DOC: NodeDoc = {
 export default function GetConfigStoreNodeConfig({ properties, updateProp }: NodeConfigProps) {
   return (
     <div>
-      <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Key</Text>
-      <Input
-        size="small"
+      <Text strong className="text-[10px] block mb-0.5">Key</Text>
+      <TextField
         placeholder="e.g. API_SECRET, AUTH_TOKEN"
         value={(properties.key as string) || ''}
-        onChange={(e) => updateProp('key', e.target.value)}
-        style={{ fontFamily: 'monospace' }}
+        onChange={(e) => updateProp('key', e.currentTarget.value)}
+        className="font-mono"
       />
     </div>
   );

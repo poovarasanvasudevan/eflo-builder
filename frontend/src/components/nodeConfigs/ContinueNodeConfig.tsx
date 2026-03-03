@@ -1,7 +1,5 @@
-import { Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const CONTINUE_NODE_DOC: NodeDoc = {
   title: 'Continue',
@@ -43,31 +41,23 @@ export default function ContinueNodeConfig({
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>
-          Run after node
-        </Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select a node (optional)"
-          value={properties.after_node_id ?? undefined}
-          onChange={(val) => {
+        <Text strong className="text-[10px] block mb-0.5">Run after node</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={(properties.after_node_id as string) ?? ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            const val = e.target.value || undefined;
             const option = options.find((o) => o.value === val);
             updateProp('after_node_id', val ?? '');
             updateProp('after_node_label', option?.label ?? '');
           }}
-          options={options}
-          showSearch
-          optionFilterProp="label"
-          allowClear
-          onClear={() => {
-            updateProp('after_node_id', undefined);
-            updateProp('after_node_label', undefined);
-          }}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          This node will run only after the selected node has finished execution.
-        </Text>
+        >
+          <option value="">Select a node (optional)</option>
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        <Text className="text-[9px] text-[#706e6b]">This node will run only after the selected node has finished execution.</Text>
       </div>
     </>
   );

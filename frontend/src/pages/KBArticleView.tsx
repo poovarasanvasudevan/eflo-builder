@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { Button, Spin, Dropdown, message } from 'antd';
-import { EditOutlined, DeleteOutlined, MoreOutlined } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
+import Button from '@atlaskit/button';
+import Spinner from '@atlaskit/spinner';
 import PageLayout from '../components/PageLayout';
 import ConfluenceArticleLayout from '../components/kb/ConfluenceArticleLayout';
 import KBEditor from '../components/kb/KBEditor';
 import { kbGet, kbDelete, type KBArticle } from '../api/client';
+import { useToast } from '../context/ToastContext';
+import { Icons } from '../components/ui/Icons';
 
 const SPACE_NAME = 'Knowledge base space';
 
@@ -14,6 +15,8 @@ export default function KBArticleView() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<KBArticle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (!id) return;
@@ -24,20 +27,21 @@ export default function KBArticleView() {
   }, [id]);
 
   const handleDelete = () => {
+    setMenuOpen(false);
     if (!article || !confirm(`Delete "${article.title}"?`)) return;
     kbDelete(article.id)
       .then(() => {
-        message.success('Article deleted');
+        toast.success('Article deleted');
         window.location.href = '/kb';
       })
-      .catch(() => message.error('Failed to delete'));
+      .catch(() => toast.error('Failed to delete'));
   };
 
   if (loading || !id) {
     return (
       <PageLayout>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-          <Spin size="large" />
+        <div className="flex justify-center py-12">
+          <Spinner size="large" />
         </div>
       </PageLayout>
     );
@@ -46,7 +50,7 @@ export default function KBArticleView() {
   if (!article) {
     return (
       <PageLayout>
-        <div style={{ padding: 24, textAlign: 'center' }}>
+        <div className="p-6 text-center">
           <p>Article not found.</p>
           <Link to="/kb">Back to Knowledge Base</Link>
         </div>
@@ -63,28 +67,33 @@ export default function KBArticleView() {
           { title: article.title },
         ]}
         headerActions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
             <Link to={`/kb/${article.id}/edit`}>
-              <Button type="primary" size="small" icon={<EditOutlined />}>
-                Edit
+              <Button appearance="primary">
+                <span className="flex items-center gap-1"><Icons.Edit /> Edit</span>
               </Button>
             </Link>
-            <Dropdown
-              menu={{
-                items: [
-                  { key: 'delete', icon: <DeleteOutlined />, label: 'Delete', danger: true, onClick: handleDelete },
-                ] as MenuProps['items'],
-              }}
-              trigger={['click']}
-            >
-              <Button type="text" size="small" icon={<MoreOutlined />} />
-            </Dropdown>
+            <div className="relative">
+              <Button appearance="subtle" onClick={() => setMenuOpen((o) => !o)}>
+                <Icons.More />
+              </Button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" role="presentation" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-20 rounded bg-white border border-[#dfe1e6] shadow-lg py-1 min-w-[120px]">
+                    <button type="button" className="block w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-black/5" onClick={handleDelete}>
+                      <span className="flex items-center gap-2"><Icons.Delete /> Delete</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         }
-        titleArea={<h1 style={{ margin: 0, fontSize: 28, fontWeight: 600 }}>{article.title}</h1>}
-        descriptionArea={article.summary ? <p style={{ margin: 0, color: '#6b778c', fontSize: 14 }}>{article.summary}</p> : null}
+        titleArea={<h1 className="m-0 text-[28px] font-semibold">{article.title}</h1>}
+        descriptionArea={article.summary ? <p className="m-0 text-[#6b778c] text-sm">{article.summary}</p> : null}
       >
-        <div style={{ minHeight: 120 }}>
+        <div className="min-h-[120px]">
           <KBEditor
             initialContent={article.content as Record<string, unknown> ?? undefined}
             editable={false}

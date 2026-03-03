@@ -1,64 +1,54 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Typography, Tag, Empty, Timeline, Spin, Button, Descriptions } from 'antd';
-import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  SyncOutlined,
-  PlayCircleOutlined,
-  RightOutlined,
-  BugOutlined,
-} from '@ant-design/icons';
+import Button from '@atlaskit/button';
+import Spinner from '@atlaskit/spinner';
+import Lozenge from '@atlaskit/lozenge';
 import { useWorkflowStore } from '../store/workflowStore';
 import { executeWorkflowDebug, type DebugEvent } from '../api/client';
-
-const { Text } = Typography;
+import { Text } from './ui/Text';
+import { Icons } from './ui/Icons';
 
 const DETAIL_MIN = 200;
 const DETAIL_MAX = 500;
 const DETAIL_DEFAULT = 280;
 
-/* Draggable vertical divider between timeline and detail panel */
 function VDivider({ onDrag, darkMode }: { onDrag: (delta: number) => void; darkMode?: boolean }) {
   const dragging = useRef(false);
   const dividerBg = darkMode ? '#2e3138' : '#d8dde6';
 
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    dragging.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-
-    const onMove = (ev: MouseEvent) => {
-      if (!dragging.current) return;
-      onDrag(ev.movementX);
-    };
-    const onUp = () => {
-      dragging.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }, [onDrag]);
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      const onMove = (ev: MouseEvent) => {
+        if (!dragging.current) return;
+        onDrag(ev.movementX);
+      };
+      const onUp = () => {
+        dragging.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [onDrag]
+  );
 
   return (
     <div
       onMouseDown={onMouseDown}
-      style={{
-        width: 5,
-        cursor: 'col-resize',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 5,
-      }}
+      className="w-[5px] cursor-col-resize flex-shrink-0 flex items-center justify-center z-[5] hover:opacity-80"
+      style={{ background: 'transparent' }}
       onMouseEnter={(e) => (e.currentTarget.style.background = dividerBg)}
-      onMouseLeave={(e) => { if (!dragging.current) e.currentTarget.style.background = 'transparent'; }}
+      onMouseLeave={(e) => {
+        if (!dragging.current) e.currentTarget.style.background = 'transparent';
+      }}
     >
-      <div style={{ width: 1, height: '60%', background: dividerBg, borderRadius: 1 }} />
+      <div className="w-px h-[60%] rounded-sm" style={{ background: dividerBg }} />
     </div>
   );
 }
@@ -77,14 +67,7 @@ interface DebugPanelProps {
 }
 
 export default function DebugPanel({ darkMode = false }: DebugPanelProps) {
-  const {
-    currentWorkflow,
-    debugRunTrigger,
-    setDebugRunTrigger,
-    saveWorkflow,
-    fetchExecutions,
-  } = useWorkflowStore();
-
+  const { currentWorkflow, debugRunTrigger, setDebugRunTrigger, saveWorkflow, fetchExecutions } = useWorkflowStore();
   const [events, setEvents] = useState<DebugEvent[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,14 +89,12 @@ export default function DebugPanel({ darkMode = false }: DebugPanelProps) {
     if (runRequestedRef.current) return;
     runRequestedRef.current = true;
     setDebugRunTrigger(null);
-
     const run = async () => {
       setEvents([]);
       setError(null);
       setSelectedEvent(null);
       setRunning(true);
       await saveWorkflow();
-
       await executeWorkflowDebug(
         currentWorkflow.id,
         (ev) => {
@@ -132,37 +113,19 @@ export default function DebugPanel({ darkMode = false }: DebugPanelProps) {
         }
       );
     };
-
     run();
-  }, [currentWorkflow, debugRunTrigger, setDebugRunTrigger, saveWorkflow, scrollToBottom]);
+  }, [currentWorkflow, debugRunTrigger, setDebugRunTrigger, saveWorkflow, fetchExecutions, scrollToBottom]);
 
-  const statusColor = (status: string): string => {
+  const statusColor = (status: string): 'success' | 'removed' | 'inprogress' | 'moved' | 'default' => {
     switch (status) {
       case 'completed':
       case 'success':
         return 'success';
       case 'failed':
       case 'error':
-        return 'error';
-      case 'running':
-        return 'processing';
+        return 'removed';
       default:
-        return 'default';
-    }
-  };
-
-  const statusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-      case 'success':
-        return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-      case 'failed':
-      case 'error':
-        return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
-      case 'running':
-        return <SyncOutlined spin style={{ color: '#faad14' }} />;
-      default:
-        return null;
+        return 'inprogress';
     }
   };
 
@@ -173,9 +136,7 @@ export default function DebugPanel({ darkMode = false }: DebugPanelProps) {
 
   if (!currentWorkflow) {
     return (
-      <div style={{ padding: 12 }}>
-        <Empty description="Select a workflow" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-      </div>
+      <div className="p-3 text-center text-sm text-[#706e6b]">Select a workflow</div>
     );
   }
 
@@ -195,242 +156,128 @@ export default function DebugPanel({ darkMode = false }: DebugPanelProps) {
   const preBorder = darkMode ? '#2e3138' : '#e8e8e8';
   const closeColor = darkMode ? '#8b95a5' : '#706e6b';
 
+  const timelineItems: { ev: DebugEvent; label: string }[] = [];
+  if (startedEvent) timelineItems.push({ ev: startedEvent, label: 'Started' });
+  nodeEvents.forEach((ev) => timelineItems.push({ ev, label: ev.nodeType || ev.nodeId || '' }));
+  if (finishedEvent) timelineItems.push({ ev: finishedEvent, label: finishedEvent.status ?? '' });
+
   return (
-    <div style={{ padding: '8px 12px', height: '100%', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexShrink: 0 }}>
-        <Text strong style={{ fontSize: 12, color: textHeading }}>
-          <BugOutlined style={{ marginRight: 4 }} />
-          Debug — Live timeline
+    <div className="p-2 px-3 h-full min-h-0 overflow-hidden flex flex-col">
+      <div className="flex justify-between items-center mb-2 flex-shrink-0">
+        <Text strong className="text-xs flex items-center gap-1" style={{ color: textHeading }}>
+          <Icons.Bug /> Debug — Live timeline
           {startedEvent && (
-            <Tag color="blue" style={{ marginLeft: 8, fontSize: 10 }}>
-              Execution #{startedEvent.executionId}
-            </Tag>
+            <span className="ml-2"><Lozenge appearance="inprogress">Execution #{startedEvent.executionId ?? ''}</Lozenge></span>
           )}
-          {running && <Spin size="small" style={{ marginLeft: 8 }} />}
+          {running && <span className="ml-2 inline-block"><Spinner size="small" /></span>}
         </Text>
-        <Button
-          type="primary"
-          size="small"
-          icon={<PlayCircleOutlined />}
-          onClick={handleRunAgain}
-          disabled={running}
-        >
-          Run again
+        <Button appearance="primary" onClick={handleRunAgain} isDisabled={running}>
+          <span className="flex items-center gap-1"><Icons.Play /> Run again</span>
         </Button>
       </div>
 
       {error && (
-        <div style={{ marginBottom: 8, padding: 6, background: errorBg, borderRadius: 4, flexShrink: 0 }}>
-          <Text type="danger">{error}</Text>
+        <div className="mb-2 p-1.5 rounded flex-shrink-0 text-red-600 text-sm" style={{ background: errorBg }}>
+          {error}
         </div>
       )}
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-        {/* Left: Timeline */}
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden">
           {events.length === 0 && !running && !error && (
-            <Empty
-              description="Click Debug in the toolbar to run and stream events"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ marginTop: 24 }}
-            />
+            <div className="mt-6 text-center text-sm text-[#706e6b]">Click Debug in the toolbar to run and stream events</div>
           )}
           {events.length > 0 && (
-            <Timeline
-              key={events.length}
-              items={[
-                startedEvent && {
-                  color: 'blue',
-                  children: (
-                    <div style={{ fontSize: 10, padding: '4px 0' }}>
-                      <Tag color="blue">Started</Tag>
-                      <Text type="secondary" style={{ fontSize: 9, marginLeft: 4 }}>
-                        {new Date(startedEvent.executedAt).toLocaleTimeString()}
-                      </Text>
-                    </div>
-                  ),
-                },
-                ...nodeEvents.map((ev) => ({
-                  color: ev.status === 'success' ? 'green' : 'red',
-                  children: (
-                    <div
-                      style={{
-                        fontSize: 10,
-                        cursor: 'pointer',
-                        padding: '6px 8px',
-                        borderRadius: 4,
-                        background: selectedEvent?.executedAt === ev.executedAt ? timelineSelectedBg : 'transparent',
-                        border: selectedEvent?.executedAt === ev.executedAt ? `1px solid ${timelineSelectedBorder}` : '1px solid transparent',
-                        transition: 'all 0.15s',
-                      }}
-                      onClick={() => setSelectedEvent(ev)}
-                      onMouseEnter={(e) => {
-                        if (selectedEvent?.executedAt !== ev.executedAt) e.currentTarget.style.background = timelineHoverBg;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (selectedEvent?.executedAt !== ev.executedAt) e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                        <Tag color="blue" style={{ fontSize: 9, padding: '0 3px', margin: 0 }}>
-                          {ev.nodeType || ev.nodeId}
-                        </Tag>
-                        {ev.nodeLabel && ev.nodeLabel !== ev.nodeId && (
-                          <Text type="secondary" style={{ fontSize: 9 }}>{ev.nodeLabel}</Text>
-                        )}
-                        <Tag
-                          color={statusColor(ev.status)}
-                          style={{ fontSize: 9, padding: '0 3px', margin: 0 }}
-                          icon={statusIcon(ev.status)}
-                        >
-                          {ev.status}
-                        </Tag>
-                        {selectedEvent?.executedAt === ev.executedAt && (
-                          <RightOutlined style={{ fontSize: 8, color: '#1890ff', marginLeft: 'auto' }} />
-                        )}
-                      </div>
-                      {ev.error && (
-                        <Text type="danger" style={{ fontSize: 9, display: 'block', marginTop: 2 }}>
-                          ⚠ {ev.error}
-                        </Text>
-                      )}
-                      <Text type="secondary" style={{ fontSize: 8 }}>
-                        {new Date(ev.executedAt).toLocaleTimeString()}
-                      </Text>
-                    </div>
-                  ),
-                })),
-                finishedEvent && {
-                  color: finishedEvent.status === 'completed' ? 'green' : 'red',
-                  children: (
-                    <div style={{ fontSize: 10, padding: '4px 0' }}>
-                      <Tag color={statusColor(finishedEvent.status)} icon={statusIcon(finishedEvent.status)}>
-                        {finishedEvent.status}
-                      </Tag>
-                      {finishedEvent.error && (
-                        <Text type="danger" style={{ fontSize: 9, marginLeft: 4 }}>{finishedEvent.error}</Text>
-                      )}
-                      <Text type="secondary" style={{ fontSize: 9, marginLeft: 4 }}>
-                        {new Date(finishedEvent.executedAt).toLocaleTimeString()}
-                      </Text>
-                    </div>
-                  ),
-                },
-              ].filter(Boolean) as { color: string; children: React.ReactNode }[]}
-            />
+            <ul className="list-none m-0 p-0 border-l-2 border-[#dfe1e6] pl-4 space-y-1">
+              {startedEvent && (
+                <li className="text-[10px] py-1">
+                  <Lozenge appearance="inprogress">Started</Lozenge>
+                  <span className="text-[9px] text-[#706e6b] ml-1">{new Date(startedEvent.executedAt).toLocaleTimeString()}</span>
+                </li>
+              )}
+              {nodeEvents.map((ev) => (
+                <li
+                  key={`${ev.executedAt}-${ev.nodeId}`}
+                  className="text-[10px] cursor-pointer py-1.5 px-2 rounded transition-all"
+                  style={{
+                    background: selectedEvent?.executedAt === ev.executedAt ? timelineSelectedBg : 'transparent',
+                    border: selectedEvent?.executedAt === ev.executedAt ? `1px solid ${timelineSelectedBorder}` : '1px solid transparent',
+                  }}
+                  onClick={() => setSelectedEvent(ev)}
+                  onMouseEnter={(e) => {
+                    if (selectedEvent?.executedAt !== ev.executedAt) e.currentTarget.style.background = timelineHoverBg;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedEvent?.executedAt !== ev.executedAt) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="text-[9px]"><Lozenge appearance="inprogress">{ev.nodeType || ev.nodeId}</Lozenge></span>
+                    {ev.nodeLabel && ev.nodeLabel !== ev.nodeId && <span className="text-[9px] text-[#706e6b]">{ev.nodeLabel}</span>}
+                    <span className="text-[9px]"><Lozenge appearance={statusColor(ev.status)}>{ev.status}</Lozenge></span>
+                  </div>
+                  {ev.error && <div className="text-red-600 text-[9px] mt-0.5">⚠ {ev.error}</div>}
+                  <div className="text-[8px] text-[#706e6b]">{new Date(ev.executedAt).toLocaleTimeString()}</div>
+                </li>
+              ))}
+              {finishedEvent && (
+                <li className="text-[10px] py-1">
+                  <Lozenge appearance={statusColor(finishedEvent.status)}>{finishedEvent.status}</Lozenge>
+                  {finishedEvent.error && <span className="text-red-600 text-[9px] ml-1">{finishedEvent.error}</span>}
+                  <span className="text-[9px] text-[#706e6b] ml-1">{new Date(finishedEvent.executedAt).toLocaleTimeString()}</span>
+                </li>
+              )}
+            </ul>
           )}
           <div ref={timelineEndRef} />
         </div>
 
         <VDivider onDrag={onDetailDrag} darkMode={darkMode} />
 
-        {/* Right: Node input/output detail */}
         <div
-          style={{
-            width: detailWidth,
-            flexShrink: 0,
-            minHeight: 0,
-            borderLeft: `1px solid ${detailBorder}`,
-            paddingLeft: 8,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            background: detailBg,
-            borderRadius: 4,
-          }}
+          className="flex-shrink-0 min-h-0 pl-2 overflow-y-auto overflow-x-hidden rounded border-l"
+          style={{ width: detailWidth, borderColor: detailBorder, background: detailBg }}
         >
           {selectedEvent && selectedEvent.event === 'node' ? (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <Text strong style={{ fontSize: 11, color: textHeading }}>Node detail</Text>
-                <span
-                  onClick={() => setSelectedEvent(null)}
-                  style={{ cursor: 'pointer', fontSize: 12, color: closeColor, lineHeight: 1 }}
-                >
+              <div className="flex justify-between items-center mb-1.5">
+                <Text strong className="text-[11px]" style={{ color: textHeading }}>Node detail</Text>
+                <button type="button" onClick={() => setSelectedEvent(null)} className="cursor-pointer text-xs leading-none" style={{ color: closeColor }}>
                   ✕
-                </span>
+                </button>
               </div>
-              <Descriptions
-                size="small"
-                column={1}
-                bordered
-                labelStyle={{ fontSize: 10, padding: '3px 6px', background: detailLabelBg, width: 56 }}
-                contentStyle={{ fontSize: 10, padding: '3px 6px' }}
-              >
-                <Descriptions.Item label="Node">{selectedEvent.nodeId}</Descriptions.Item>
-                <Descriptions.Item label="Type">
-                  <Tag color="blue" style={{ fontSize: 9, padding: '0 3px', margin: 0 }}>{selectedEvent.nodeType}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag
-                    icon={statusIcon(selectedEvent.status)}
-                    color={statusColor(selectedEvent.status)}
-                    style={{ fontSize: 9, padding: '0 3px', margin: 0 }}
-                  >
-                    {selectedEvent.status}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Time">{new Date(selectedEvent.executedAt).toLocaleString()}</Descriptions.Item>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-[10px] border border-[#e8e8e8] rounded">
+                <dt className="py-0.5 px-1.5 font-medium" style={{ background: detailLabelBg }}>Node</dt>
+                <dd className="py-0.5 px-1.5 m-0">{selectedEvent.nodeId}</dd>
+                <dt className="py-0.5 px-1.5 font-medium" style={{ background: detailLabelBg }}>Type</dt>
+                <dd className="py-0.5 px-1.5 m-0 text-[9px]"><Lozenge appearance="inprogress">{selectedEvent.nodeType}</Lozenge></dd>
+                <dt className="py-0.5 px-1.5 font-medium" style={{ background: detailLabelBg }}>Status</dt>
+                <dd className="py-0.5 px-1.5 m-0 text-[9px]"><Lozenge appearance={statusColor(selectedEvent.status)}>{selectedEvent.status}</Lozenge></dd>
+                <dt className="py-0.5 px-1.5 font-medium" style={{ background: detailLabelBg }}>Time</dt>
+                <dd className="py-0.5 px-1.5 m-0">{new Date(selectedEvent.executedAt).toLocaleString()}</dd>
                 {selectedEvent.error && (
-                  <Descriptions.Item label="Error">
-                    <Text type="danger" style={{ fontSize: 10, wordBreak: 'break-all' }}>{selectedEvent.error}</Text>
-                  </Descriptions.Item>
+                  <>
+                    <dt className="py-0.5 px-1.5 font-medium" style={{ background: detailLabelBg }}>Error</dt>
+                    <dd className="py-0.5 px-1.5 m-0 text-red-600 break-all">{selectedEvent.error}</dd>
+                  </>
                 )}
-              </Descriptions>
-              <div style={{ marginTop: 8 }}>
-                <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 4 }}>Input</Text>
-                <pre
-                  style={{
-                    margin: 0,
-                    fontSize: 10,
-                    maxHeight: 180,
-                    overflow: 'auto',
-                    background: preBg,
-                    padding: 6,
-                    borderRadius: 4,
-                    border: `1px solid ${preBorder}`,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-all',
-                    color: darkMode ? '#c3cbd8' : undefined,
-                  }}
-                >
+              </dl>
+              <div className="mt-2">
+                <Text strong className="text-[10px] block mb-1">Input</Text>
+                <pre className="m-0 text-[10px] max-h-[180px] overflow-auto p-1.5 rounded border whitespace-pre-wrap break-all" style={{ background: preBg, borderColor: preBorder, color: darkMode ? '#c3cbd8' : undefined }}>
                   {formatJSON(selectedEvent.input || '') || '(empty)'}
                 </pre>
               </div>
-              <div style={{ marginTop: 8 }}>
-                <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 4 }}>Output</Text>
-                <pre
-                  style={{
-                    margin: 0,
-                    fontSize: 10,
-                    maxHeight: 180,
-                    overflow: 'auto',
-                    background: preBg,
-                    padding: 6,
-                    borderRadius: 4,
-                    border: `1px solid ${preBorder}`,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-all',
-                    color: darkMode ? '#c3cbd8' : undefined,
-                  }}
-                >
+              <div className="mt-2">
+                <Text strong className="text-[10px] block mb-1">Output</Text>
+                <pre className="m-0 text-[10px] max-h-[180px] overflow-auto p-1.5 rounded border whitespace-pre-wrap break-all" style={{ background: preBg, borderColor: preBorder, color: darkMode ? '#c3cbd8' : undefined }}>
                   {formatJSON(selectedEvent.output || '') || '(empty)'}
                 </pre>
               </div>
             </>
           ) : (
-            <div style={{ padding: '24px 8px', textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                Click a timeline node to view its input and output here.
-              </Text>
+            <div className="py-6 px-2 text-center">
+              <Text className="text-[11px] text-[#706e6b]">Click a timeline node to view its input and output here.</Text>
             </div>
           )}
         </div>

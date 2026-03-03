@@ -1,27 +1,13 @@
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Modal,
-  Input,
-  Select,
-  Table,
-  Space,
-  Switch,
-  Popconfirm,
-  Typography,
-  Tag,
-  message,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  NotificationOutlined,
-} from '@ant-design/icons';
+import Button from '@atlaskit/button';
+import ModalDialog, { ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+import TextField from '@atlaskit/textfield';
+import Lozenge from '@atlaskit/lozenge';
 import { useWorkflowStore } from '../store/workflowStore';
 import type { RedisSubscription } from '../api/client';
-
-const { Text } = Typography;
+import { useToast } from '../context/ToastContext';
+import { Text } from './ui/Text';
+import { Icons } from './ui/Icons';
 
 interface FormState {
   workflowId: number | undefined;
@@ -48,7 +34,8 @@ export default function RedisSubscriptionManager({ open, onClose }: { open: bool
   const [form, setForm] = useState<FormState>(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     if (open) {
@@ -56,7 +43,7 @@ export default function RedisSubscriptionManager({ open, onClose }: { open: bool
       fetchWorkflows();
       fetchConfigs();
     }
-  }, [open]);
+  }, [open, fetchRedisSubs, fetchWorkflows, fetchConfigs]);
 
   const redisConfigs = configs.filter((c) => c.type === 'redis');
 
@@ -79,9 +66,9 @@ export default function RedisSubscriptionManager({ open, onClose }: { open: bool
   };
 
   const handleSave = async () => {
-    if (!form.workflowId) { messageApi.warning('Workflow is required'); return; }
-    if (!form.configId) { messageApi.warning('Redis config is required'); return; }
-    if (!form.channel.trim()) { messageApi.warning('Channel is required'); return; }
+    if (!form.workflowId) { toast.warning('Workflow is required'); return; }
+    if (!form.configId) { toast.warning('Redis config is required'); return; }
+    if (!form.channel.trim()) { toast.warning('Channel is required'); return; }
 
     const payload: Partial<RedisSubscription> = {
       workflowId: form.workflowId,
@@ -93,32 +80,33 @@ export default function RedisSubscriptionManager({ open, onClose }: { open: bool
     try {
       if (editingId) {
         await editRedisSub(editingId, payload);
-        messageApi.success('Subscription updated');
+        toast.success('Subscription updated');
       } else {
         await addRedisSub(payload);
-        messageApi.success('Subscription created');
+        toast.success('Subscription created');
       }
       setFormOpen(false);
     } catch {
-      messageApi.error('Failed to save subscription');
+      toast.error('Failed to save subscription');
     }
   };
 
   const handleToggle = async (s: RedisSubscription, enabled: boolean) => {
     try {
       await editRedisSub(s.id, { ...s, enabled });
-      messageApi.success(enabled ? 'Subscription enabled' : 'Subscription paused');
+      toast.success(enabled ? 'Subscription enabled' : 'Subscription paused');
     } catch {
-      messageApi.error('Failed to update');
+      toast.error('Failed to update');
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await removeRedisSub(id);
-      messageApi.success('Subscription deleted');
+      toast.success('Subscription deleted');
+      setDeleteConfirmId(null);
     } catch {
-      messageApi.error('Failed to delete');
+      toast.error('Failed to delete');
     }
   };
 
@@ -128,150 +116,117 @@ export default function RedisSubscriptionManager({ open, onClose }: { open: bool
     return c ? `${c.name}` : `#${id}`;
   };
 
-  const columns = [
-    {
-      title: 'Workflow',
-      dataIndex: 'workflowId',
-      key: 'workflowId',
-      render: (id: number) => <Text strong style={{ fontSize: 11 }}>{workflowName(id)}</Text>,
-    },
-    {
-      title: 'Channel',
-      dataIndex: 'channel',
-      key: 'channel',
-      render: (ch: string, record: RedisSubscription) => (
-        <span>
-          <Tag style={{ fontFamily: 'monospace', fontSize: 10 }}>{ch}</Tag>
-          {record.isPattern && <Tag color="orange" style={{ fontSize: 9 }}>PATTERN</Tag>}
-        </span>
-      ),
-    },
-    {
-      title: 'Server',
-      dataIndex: 'configId',
-      key: 'configId',
-      render: (id: number) => <Text type="secondary" style={{ fontSize: 10 }}>{configName(id)}</Text>,
-    },
-    {
-      title: 'Msgs',
-      dataIndex: 'msgCount',
-      key: 'msgCount',
-      width: 50,
-      render: (v: number) => <Text style={{ fontSize: 10 }}>{v}</Text>,
-    },
-    {
-      title: 'On',
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 50,
-      render: (enabled: boolean, record: RedisSubscription) => (
-        <Switch size="small" checked={enabled} onChange={(v) => handleToggle(record, v)} />
-      ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 70,
-      render: (_: any, record: RedisSubscription) => (
-        <Space size={4}>
-          <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-          <Popconfirm title="Delete?" onConfirm={() => handleDelete(record.id)} okButtonProps={{ danger: true }}>
-            <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  if (!open) return null;
 
   return (
-    <Modal
-      title={<Space><NotificationOutlined /><span>Redis Subscriptions</span></Space>}
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={700}
-    >
-      {contextHolder}
-      <div style={{ marginBottom: 8 }}>
-        <Button size="small" type="primary" icon={<PlusOutlined />} onClick={openNew}>
-          Add Subscription
-        </Button>
-      </div>
+    <>
+      <ModalDialog onClose={onClose} width="700px">
+        <ModalHeader>
+          <ModalTitle><span className="flex items-center gap-2"><Icons.Bell /> Redis Subscriptions</span></ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="mb-2">
+            <Button appearance="primary" onClick={openNew}>
+              <span className="flex items-center gap-1"><Icons.Plus /> Add Subscription</span>
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px] border-collapse">
+              <thead>
+                <tr className="border-b border-[#e8e8e8]">
+                  <th className="text-left py-2 px-2 font-semibold">Workflow</th>
+                  <th className="text-left py-2 px-2 font-semibold">Channel</th>
+                  <th className="text-left py-2 px-2 font-semibold">Server</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[50px]">Msgs</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[50px]">On</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[70px]" />
+                </tr>
+              </thead>
+              <tbody>
+                {redisSubs.length === 0 && (
+                  <tr><td colSpan={6} className="py-4 text-center text-[#706e6b]">No subscriptions. Add one to trigger workflows on Redis messages.</td></tr>
+                )}
+                {redisSubs.map((record) => (
+                  <tr key={record.id} className="border-b border-[#f0f0f0]">
+                    <td className="py-2 px-2"><Text strong className="text-[11px]">{workflowName(record.workflowId)}</Text></td>
+                    <td className="py-2 px-2">
+                      <span className="flex items-center gap-1">
+                        <Lozenge>{record.channel}</Lozenge>
+                        {record.isPattern && <Lozenge appearance="inprogress">PATTERN</Lozenge>}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-[10px] text-[#706e6b]">{configName(record.configId)}</td>
+                    <td className="py-2 px-2 text-[10px]">{record.msgCount ?? 0}</td>
+                    <td className="py-2 px-2">
+                      <input type="checkbox" checked={record.enabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleToggle(record, e.target.checked)} className="rounded" />
+                    </td>
+                    <td className="py-2 px-2">
+                      <button type="button" className="p-0.5 rounded hover:bg-black/10 mr-0.5" onClick={() => openEdit(record)} aria-label="Edit"><Icons.Edit /></button>
+                      <button type="button" className="p-0.5 rounded hover:bg-red-100 text-red-600" onClick={() => setDeleteConfirmId(record.id)} aria-label="Delete"><Icons.Delete /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ModalBody>
+      </ModalDialog>
 
-      <Table
-        dataSource={redisSubs}
-        columns={columns}
-        rowKey="id"
-        size="small"
-        pagination={false}
-        style={{ fontSize: 11 }}
-        locale={{ emptyText: 'No subscriptions. Add one to trigger workflows on Redis messages.' }}
-      />
+      {formOpen && (
+        <ModalDialog onClose={() => setFormOpen(false)} width="400px">
+          <ModalHeader><ModalTitle>{editingId ? 'Edit Subscription' : 'New Subscription'}</ModalTitle></ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-2">
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Workflow</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.workflowId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, workflowId: e.target.value ? Number(e.target.value) : undefined })}>
+                  <option value="">Select workflow...</option>
+                  {workflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Redis Server</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.configId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, configId: e.target.value ? Number(e.target.value) : undefined })}>
+                  <option value="">Select Redis config...</option>
+                  {redisConfigs.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} ({(c.config as { host?: string; port?: number })?.host ?? '127.0.0.1'}:{(c.config as { port?: number })?.port ?? 6379})</option>
+                  ))}
+                </select>
+                {redisConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b]">No Redis configs found.</Text>}
+              </div>
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Channel / Pattern</Text>
+                <TextField placeholder="my-channel or events:*" value={form.channel} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, channel: e.target.value })} />
+              </div>
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Mode</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.isPattern ? 'pattern' : 'channel'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, isPattern: e.target.value === 'pattern' })}>
+                  <option value="channel">SUBSCRIBE — exact channel name</option>
+                  <option value="pattern">PSUBSCRIBE — glob pattern (*, ?)</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="redis-enabled" checked={form.enabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, enabled: e.target.checked })} className="rounded" />
+                <label htmlFor="redis-enabled"><Text strong className="text-[10px]">Enabled</Text></label>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button appearance="primary" onClick={handleSave}>{editingId ? 'Update' : 'Create'}</Button>
+            <Button appearance="subtle" onClick={() => setFormOpen(false)}>Cancel</Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
 
-      <Modal
-        title={editingId ? 'Edit Subscription' : 'New Subscription'}
-        open={formOpen}
-        onOk={handleSave}
-        onCancel={() => setFormOpen(false)}
-        okText={editingId ? 'Update' : 'Create'}
-        width={400}
-      >
-        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Workflow</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              placeholder="Select workflow..."
-              value={form.workflowId}
-              onChange={(val) => setForm({ ...form, workflowId: val })}
-              options={workflows.map((wf) => ({ value: wf.id, label: wf.name }))}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Redis Server</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              placeholder="Select Redis config..."
-              value={form.configId}
-              onChange={(val) => setForm({ ...form, configId: val })}
-              options={redisConfigs.map((c) => ({
-                value: c.id,
-                label: `${c.name} (${c.config?.host || '127.0.0.1'}:${c.config?.port || 6379})`,
-              }))}
-              notFoundContent={<Text type="secondary" style={{ fontSize: 10 }}>No Redis configs found.</Text>}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Channel / Pattern</Text>
-            <Input
-              size="small"
-              placeholder="my-channel or events:*"
-              value={form.channel}
-              onChange={(e) => setForm({ ...form, channel: e.target.value })}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Mode</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              value={form.isPattern ? 'pattern' : 'channel'}
-              onChange={(val) => setForm({ ...form, isPattern: val === 'pattern' })}
-              options={[
-                { value: 'channel', label: 'SUBSCRIBE — exact channel name' },
-                { value: 'pattern', label: 'PSUBSCRIBE — glob pattern (*, ?)' },
-              ]}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Enabled</Text>
-            <Switch size="small" checked={form.enabled} onChange={(v) => setForm({ ...form, enabled: v })} />
-          </div>
-        </Space>
-      </Modal>
-    </Modal>
+      {deleteConfirmId != null && (
+        <ModalDialog onClose={() => setDeleteConfirmId(null)}>
+          <ModalHeader><ModalTitle>Delete?</ModalTitle></ModalHeader>
+          <ModalFooter>
+            <Button appearance="primary" className="!bg-red-600 hover:!bg-red-700" onClick={() => handleDelete(deleteConfirmId)}>Delete</Button>
+            <Button appearance="subtle" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
+    </>
   );
 }
-

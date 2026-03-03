@@ -1,7 +1,6 @@
-import { Input, Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const READ_FILE_NODE_DOC: NodeDoc = {
   title: 'Read File',
@@ -35,27 +34,16 @@ export default function ReadFileNodeConfig({ properties, updateProp }: NodeConfi
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>File Path</Text>
-        <Input
-          size="small"
-          placeholder="/path/to/file.txt"
-          value={properties.path || ''}
-          onChange={(e) => updateProp('path', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">File Path</Text>
+        <TextField placeholder="/path/to/file.txt" value={(properties.path as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('path', e.target.value)} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Encoding</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          value={properties.encoding || 'utf-8'}
-          onChange={(val) => updateProp('encoding', val)}
-          options={[
-            { value: 'utf-8', label: 'UTF-8' },
-            { value: 'ascii', label: 'ASCII' },
-            { value: 'binary', label: 'Binary' },
-          ]}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Encoding</Text>
+        <select className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white" value={(properties.encoding as string) || 'utf-8'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('encoding', e.target.value)}>
+          <option value="utf-8">UTF-8</option>
+          <option value="ascii">ASCII</option>
+          <option value="binary">Binary</option>
+        </select>
       </div>
     </>
   );

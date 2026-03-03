@@ -1,8 +1,5 @@
-import { Input, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
 
 export const TRANSFORM_NODE_DOC: NodeDoc = {
   title: 'Transform',
@@ -30,18 +27,15 @@ export const TRANSFORM_NODE_DOC: NodeDoc = {
 export default function TransformNodeConfig({ properties, updateProp }: NodeConfigProps) {
   return (
     <div>
-      <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Expression</Text>
-      <TextArea
-        size="small"
-        rows={3}
-        style={{ fontFamily: 'monospace', fontSize: 10 }}
+      <Text strong className="text-[10px] block mb-0.5">Expression</Text>
+      <textarea
+        className="w-full min-h-[60px] p-2 border border-[#dfe1e6] rounded text-[10px] font-mono resize-y"
         placeholder='body + " transformed"'
-        value={properties.expression || ''}
+        value={(properties.expression as string) || ''}
         onChange={(e) => updateProp('expression', e.target.value)}
+        rows={3}
       />
-      <Text type="secondary" style={{ fontSize: 10 }}>
-        Uses expr-lang. Available vars from upstream output.
-      </Text>
+      <Text className="text-[10px] text-[#706e6b]">Uses expr-lang. Available vars from upstream output.</Text>
     </div>
   );
 }

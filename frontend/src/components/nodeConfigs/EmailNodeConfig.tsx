@@ -1,8 +1,6 @@
-import { Input, Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const EMAIL_NODE_DOC: NodeDoc = {
   title: 'Send Email',
@@ -45,83 +43,45 @@ export default function EmailNodeConfig({ properties, updateProp, configs }: Nod
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Email Config</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select email server..."
-          value={properties.configId || undefined}
-          onChange={(val) => updateProp('configId', val)}
-          options={emailConfigs.map((c) => ({
-            value: c.id,
-            label: `${c.name} (${c.config?.host || 'smtp'})`,
-          }))}
-          notFoundContent={
-            <Text type="secondary" style={{ fontSize: 10, padding: 4 }}>
-              No email configs. Add one in ⚙ Configs.
-            </Text>
-          }
-        />
+        <Text strong className="text-[10px] block mb-0.5">Email Config</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.configId != null ? String(properties.configId) : ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('configId', e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Select email server...</option>
+          {emailConfigs.map((c) => (
+            <option key={c.id} value={c.id}>{c.name} ({(c.config as { host?: string })?.host || 'smtp'})</option>
+          ))}
+        </select>
+        {emailConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b] block mt-0.5">No email configs. Add one in ⚙ Configs.</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>To</Text>
-        <Input
-          size="small"
-          placeholder="user@example.com, user2@example.com"
-          value={properties.to || ''}
-          onChange={(e) => updateProp('to', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">To</Text>
+        <TextField placeholder="user@example.com, user2@example.com" value={(properties.to as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('to', e.target.value)} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>CC</Text>
-        <Input
-          size="small"
-          placeholder="(optional)"
-          value={properties.cc || ''}
-          onChange={(e) => updateProp('cc', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">CC</Text>
+        <TextField placeholder="(optional)" value={(properties.cc as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('cc', e.target.value)} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>BCC</Text>
-        <Input
-          size="small"
-          placeholder="(optional)"
-          value={properties.bcc || ''}
-          onChange={(e) => updateProp('bcc', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">BCC</Text>
+        <TextField placeholder="(optional)" value={(properties.bcc as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('bcc', e.target.value)} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Subject</Text>
-        <Input
-          size="small"
-          placeholder="Email subject"
-          value={properties.subject || ''}
-          onChange={(e) => updateProp('subject', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Subject</Text>
+        <TextField placeholder="Email subject" value={(properties.subject as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('subject', e.target.value)} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Body</Text>
-        <TextArea
-          size="small"
-          rows={4}
-          style={{ fontSize: 10 }}
-          placeholder="Email body content..."
-          value={properties.body || ''}
-          onChange={(e) => updateProp('body', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Body</Text>
+        <textarea className="w-full min-h-[80px] p-2 border border-[#dfe1e6] rounded text-[10px] resize-y" placeholder="Email body content..." value={(properties.body as string) || ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateProp('body', e.target.value)} rows={4} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Content Type</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          value={properties.contentType || 'text/plain'}
-          onChange={(val) => updateProp('contentType', val)}
-          options={[
-            { value: 'text/plain', label: 'Plain Text' },
-            { value: 'text/html', label: 'HTML' },
-          ]}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Content Type</Text>
+        <select className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white" value={(properties.contentType as string) || 'text/plain'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('contentType', e.target.value)}>
+          <option value="text/plain">Plain Text</option>
+          <option value="text/html">HTML</option>
+        </select>
       </div>
     </>
   );

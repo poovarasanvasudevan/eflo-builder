@@ -1,7 +1,5 @@
-import { Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const HTTP_IN_NODE_DOC: NodeDoc = {
   title: 'HTTP In',
@@ -37,9 +35,7 @@ export const HTTP_IN_NODE_DOC: NodeDoc = {
 export default function HttpInNodeConfig(_props: NodeConfigProps) {
   return (
     <div>
-      <Text type="secondary" style={{ fontSize: 10 }}>
-        Request data (payload, headers, query) is passed from the HTTP trigger. Add an HTTP-out node to send the response.
-      </Text>
+      <Text className="text-[#706e6b] text-[10px]">Request data (payload, headers, query) is passed from the HTTP trigger. Add an HTTP-out node to send the response.</Text>
     </div>
   );
 }

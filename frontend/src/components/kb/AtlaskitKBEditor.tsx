@@ -1,13 +1,5 @@
-import { IntlProvider } from 'react-intl';
-import { Editor } from '@atlaskit/editor-core';
-
+/** Stub: Atlaskit editor-core was removed due to dependency conflicts. Use KBEditor (TipTap) instead. */
 export type ADFDocument = Record<string, unknown>;
-
-const defaultDoc: ADFDocument = {
-  type: 'doc',
-  version: 1,
-  content: [],
-};
 
 export interface EditorActionsLike {
   getValue: () => Promise<ADFDocument | undefined>;
@@ -19,24 +11,11 @@ interface AtlaskitKBEditorProps {
   onSave?: () => void;
 }
 
-export function AtlaskitKBEditor({
-  initialContent,
-  onEditorReady,
-  onSave,
-}: AtlaskitKBEditorProps) {
-  const doc = initialContent && Object.keys(initialContent).length > 0 ? initialContent : defaultDoc;
-
+export function AtlaskitKBEditor(_props: AtlaskitKBEditorProps) {
   return (
-    <IntlProvider locale="en" messages={{}}>
-      <div className="atlaskit-kb-editor" style={{ minHeight: 320 }}>
-        <Editor
-          appearance="full-page"
-          defaultValue={doc}
-          onSave={onSave}
-          onEditorReady={onEditorReady}
-        />
-      </div>
-    </IntlProvider>
+    <div className="p-4 text-sm text-[#5e6c84] border border-[#dfe1e6] rounded">
+      Rich editor (TipTap) is used for this app. For Atlaskit Editor, add @atlaskit/editor-core and restore this component.
+    </div>
   );
 }
 

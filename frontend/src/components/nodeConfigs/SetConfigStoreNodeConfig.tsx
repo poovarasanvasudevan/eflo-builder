@@ -1,8 +1,6 @@
-import { Input, Typography } from 'antd';
+import TextField from '@atlaskit/textfield';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
 
 export const SET_CONFIG_STORE_NODE_DOC: NodeDoc = {
   title: 'Set Config Store',
@@ -27,33 +25,30 @@ export default function SetConfigStoreNodeConfig({ properties, updateProp }: Nod
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Key</Text>
-        <Input
-          size="small"
+        <Text strong className="text-[10px] block mb-0.5">Key</Text>
+        <TextField
           placeholder="e.g. CACHED_TOKEN"
           value={(properties.key as string) || ''}
-          onChange={(e) => updateProp('key', e.target.value)}
-          style={{ fontFamily: 'monospace' }}
+          onChange={(e) => updateProp('key', e.currentTarget.value)}
+          className="font-mono"
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Value (optional)</Text>
-        <TextArea
-          size="small"
-          rows={2}
+        <Text strong className="text-[10px] block mb-0.5">Value (optional)</Text>
+        <textarea
+          className="w-full min-h-[40px] p-2 border border-[#dfe1e6] rounded text-[10px] font-mono resize-y"
           placeholder="Leave empty to use input.value from previous node"
           value={(properties.value as string) || ''}
           onChange={(e) => updateProp('value', e.target.value)}
-          style={{ fontFamily: 'monospace', fontSize: 10 }}
+          rows={2}
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Description (optional)</Text>
-        <Input
-          size="small"
+        <Text strong className="text-[10px] block mb-0.5">Description (optional)</Text>
+        <TextField
           placeholder="e.g. Token from auth flow"
           value={(properties.description as string) || ''}
-          onChange={(e) => updateProp('description', e.target.value)}
+          onChange={(e) => updateProp('description', e.currentTarget.value)}
         />
       </div>
     </>

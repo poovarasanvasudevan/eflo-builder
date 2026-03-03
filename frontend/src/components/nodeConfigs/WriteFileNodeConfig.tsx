@@ -1,8 +1,6 @@
-import { Input, Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const WRITE_FILE_NODE_DOC: NodeDoc = {
   title: 'Write File',
@@ -35,39 +33,20 @@ export default function WriteFileNodeConfig({ properties, updateProp }: NodeConf
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>File Path</Text>
-        <Input
-          size="small"
-          placeholder="/path/to/output.txt"
-          value={properties.path || ''}
-          onChange={(e) => updateProp('path', e.target.value)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">File Path</Text>
+        <TextField placeholder="/path/to/output.txt" value={(properties.path as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('path', e.target.value)} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Content</Text>
-        <TextArea
-          size="small"
-          rows={3}
-          placeholder="Content to write..."
-          value={properties.content || ''}
-          onChange={(e) => updateProp('content', e.target.value)}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          Leave empty to use upstream "content" field.
-        </Text>
+        <Text strong className="text-[10px] block mb-0.5">Content</Text>
+        <textarea className="w-full min-h-[60px] p-2 border border-[#dfe1e6] rounded text-xs resize-y" placeholder="Content to write..." value={(properties.content as string) || ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateProp('content', e.target.value)} rows={3} />
+        <Text className="text-[9px] text-[#706e6b]">Leave empty to use upstream &quot;content&quot; field.</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Mode</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          value={properties.mode || 'overwrite'}
-          onChange={(val) => updateProp('mode', val)}
-          options={[
-            { value: 'overwrite', label: 'Overwrite' },
-            { value: 'append', label: 'Append' },
-          ]}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Mode</Text>
+        <select className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white" value={(properties.mode as string) || 'overwrite'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('mode', e.target.value)}>
+          <option value="overwrite">Overwrite</option>
+          <option value="append">Append</option>
+        </select>
       </div>
     </>
   );

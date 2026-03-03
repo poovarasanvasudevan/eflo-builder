@@ -1,39 +1,22 @@
 import { useRef, useState } from 'react';
-import { Button, Select, Modal, Input, Space, Tooltip, Tag, message } from 'antd';
-import {
-  PlusOutlined,
-  SaveOutlined,
-  PlayCircleOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  DeleteOutlined,
-  HistoryOutlined,
-  SettingOutlined,
-  UndoOutlined,
-  RedoOutlined,
-  ScissorOutlined,
-  CopyOutlined,
-  DeleteColumnOutlined,
-  AppstoreOutlined,
-  QuestionCircleOutlined,
-  BugOutlined,
-  FileImageFilled,
-  BulbOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
+import Button from '@atlaskit/button';
+import Tooltip from '@atlaskit/tooltip';
+import Lozenge from '@atlaskit/lozenge';
+import ModalDialog, { ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+import TextField from '@atlaskit/textfield';
 import { useWorkflowStore } from '../store/workflowStore';
 import { exportWorkflow } from '../api/client';
 import { PRIMARY } from '../theme';
+import { useToast } from '../context/ToastContext';
+import { Icons } from './ui/Icons';
 import ConfigManager from './ConfigManager';
 import ConfigStoreManager from './ConfigStoreManager';
 import ScheduleManager from './ScheduleManager';
 import RedisSubscriptionManager from './RedisSubscriptionManager';
 import EmailTriggerManager from './EmailTriggerManager';
 import HttpTriggerManager from './HttpTriggerManager';
-import {getNodesBounds, getViewportForBounds, useReactFlow} from "@xyflow/react";
-import {toPng} from "html-to-image";
-
-const { TextArea } = Input;
+import { getNodesBounds, getViewportForBounds, useReactFlow } from '@xyflow/react';
+import { toPng } from 'html-to-image';
 
 interface ToolbarProps {
   toolboxOpen: boolean;
@@ -87,41 +70,37 @@ export default function Toolbar({
     switchTab,
     closeTab,
   } = useWorkflowStore();
-
-
-  const { getNodes } = useReactFlow()
-
+  const toast = useToast();
+  const { getNodes } = useReactFlow();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
-  const [messageApi, contextHolder] = message.useMessage();
   const [showConfigManager, setShowConfigManager] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ name: string; onConfirm: () => void } | null>(null);
 
   const handleSave = async () => {
     if (!currentWorkflow) return;
     try {
       await saveWorkflow();
-      messageApi.success('Workflow saved!');
+      toast.success('Workflow saved!');
     } catch {
-      messageApi.error('Failed to save workflow');
+      toast.error('Failed to save workflow');
     }
   };
 
   const handleDownload = async () => {
     if (!currentWorkflow) return;
     try {
-      const imageWidth = 1024, imageHeight = 768
+      const imageWidth = 1024,
+        imageHeight = 768;
       const nodesBounds = getNodesBounds(getNodes());
       const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0);
-
       toPng(document.querySelector('.react-flow__viewport') as HTMLElement, {
         backgroundColor: '#f7f7f7',
         width: imageWidth,
         height: imageHeight,
-        style: {
-          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-        },
+        style: { transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})` },
       }).then((image) => {
         const a = document.createElement('a');
         a.setAttribute('download', `${currentWorkflow.name}.png`);
@@ -129,17 +108,17 @@ export default function Toolbar({
         a.click();
       });
     } catch {
-      messageApi.error('Unable to Download Image')
+      toast.error('Unable to Download Image');
     }
-  }
+  };
 
   const handleRun = async () => {
     if (!currentWorkflow) return;
     try {
       await runWorkflow();
-      messageApi.success('Workflow executed!');
+      toast.success('Workflow executed!');
     } catch {
-      messageApi.error('Execution failed');
+      toast.error('Execution failed');
     }
   };
 
@@ -162,13 +141,11 @@ export default function Toolbar({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      messageApi.error('Failed to export');
+      toast.error('Failed to export');
     }
   };
 
-  const handleImport = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImport = () => fileInputRef.current?.click();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -178,9 +155,9 @@ export default function Toolbar({
       const data = JSON.parse(text);
       await importFlow(data);
       await fetchWorkflows();
-      messageApi.success('Workflow imported!');
+      toast.success('Workflow imported!');
     } catch {
-      messageApi.error('Failed to import workflow');
+      toast.error('Failed to import workflow');
     }
     e.target.value = '';
   };
@@ -193,141 +170,129 @@ export default function Toolbar({
     setNewDesc('');
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!currentWorkflow) return;
-    Modal.confirm({
-      title: 'Delete Workflow',
-      content: `Delete "${currentWorkflow.name}"?`,
-      okText: 'Delete',
-      okButtonProps: { danger: true },
-      onOk: () => removeWorkflow(currentWorkflow.id),
+    setDeleteConfirm({
+      name: currentWorkflow.name,
+      onConfirm: () => {
+        removeWorkflow(currentWorkflow.id);
+        setDeleteConfirm(null);
+      },
     });
   };
 
+  const iconBtnStyle = 'text-[#706e6b] w-6 h-6 flex items-center justify-center [&_span]:!text-current';
+
   return (
     <>
-      {contextHolder}
-      {/* Row 1: App header like Salesforce Flow Builder */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 12px',
-        height: 42,
-        background: PRIMARY,
-        color: '#fff',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>⚡ Flow Builder</span>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
-          <Select
-            size="small"
-            variant="borderless"
-            style={{ minWidth: 150, color: '#fff' }}
-            placeholder="Open Workflow..."
-            popupMatchSelectWidth={false}
-            value={currentWorkflow?.id || undefined}
-            onChange={(id) => { if (id) loadWorkflow(id); }}
-            options={workflows.map((wf) => ({ value: wf.id, label: wf.name }))}
-            allowClear
-            showSearch
-            optionFilterProp="label"
-          />
+      <div className="flex items-center px-3 h-[42px] text-white" style={{ background: PRIMARY }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-bold tracking-wide">⚡ Flow Builder</span>
+          <div className="w-px h-4 bg-white/30" />
+          <select
+            className="min-w-[150px] h-7 px-2 rounded text-sm bg-transparent text-white border border-white/30 focus:outline-none focus:ring-1 focus:ring-white/50"
+            value={currentWorkflow?.id ?? ''}
+            onChange={(e) => {
+              const id = e.target.value ? Number(e.target.value) : null;
+              if (id) loadWorkflow(id);
+            }}
+          >
+            <option value="">Open Workflow...</option>
+            {workflows.map((wf) => (
+              <option key={wf.id} value={wf.id} className="text-gray-900">
+                {wf.name}
+              </option>
+            ))}
+          </select>
         </div>
-
-        <div style={{ flex: 1 }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Button
-            type="text"
-            size="small"
-            icon={<PlusOutlined />}
-            style={{ color: '#fff' }}
-            onClick={() => setShowNewDialog(true)}
-          >New</Button>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
-          <Tooltip title="Connection Configs">
-            <Button type="text" size="small" icon={<SettingOutlined />} style={{ color: '#fff' }} onClick={() => setShowConfigManager(true)} />
+        <div className="flex-1" />
+        <div className="flex items-center gap-1">
+          <Button appearance="subtle" onClick={() => setShowNewDialog(true)} className="!text-white [&_span]:!text-white">
+            <span className="flex items-center gap-1.5">
+              <Icons.Plus /> New
+            </span>
+          </Button>
+          <div className="w-px h-4 bg-white/30" />
+          <Tooltip content="Connection Configs">
+            <Button appearance="subtle" className={iconBtnStyle} onClick={() => setShowConfigManager(true)}>
+              <Icons.Settings />
+            </Button>
           </Tooltip>
-          <Tooltip title="Config Store (secrets, tokens)">
-            <Button type="text" size="small" icon={<SafetyCertificateOutlined />} style={{ color: '#fff' }} onClick={() => setShowConfigStoreManager(true)} />
+          <Tooltip content="Config Store (secrets, tokens)">
+            <Button appearance="subtle" className={iconBtnStyle} onClick={() => setShowConfigStoreManager(true)}>
+              <Icons.Safety />
+            </Button>
           </Tooltip>
-          <Tooltip title="Execution History">
+          <Tooltip content="Execution History">
             <Button
-              type="text"
-              size="small"
-              icon={<HistoryOutlined />}
+              appearance="subtle"
+              className={iconBtnStyle}
               style={{ color: showExecutionPanel ? '#ffd700' : '#fff' }}
               onClick={() => setShowExecutionPanel(!showExecutionPanel)}
-            />
+            >
+              <Icons.History />
+            </Button>
           </Tooltip>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
-          <Tooltip title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
-            <Button
-              type="text"
-              size="small"
-              icon={<BulbOutlined />}
-              style={{ color: '#fff' }}
-              onClick={toggleDarkMode}
-            />
+          <div className="w-px h-4 bg-white/30" />
+          <Tooltip content={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <Button appearance="subtle" className="!text-white [&_span]:!text-white" onClick={toggleDarkMode}>
+              <Icons.Lightbulb />
+            </Button>
           </Tooltip>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)' }} />
-          <Tooltip title="Help">
-            <Button type="text" size="small" icon={<QuestionCircleOutlined />} style={{ color: '#fff' }} />
+          <div className="w-px h-4 bg-white/30" />
+          <Tooltip content="Help">
+            <Button appearance="subtle" className="!text-white [&_span]:!text-white">
+              <Icons.Question />
+            </Button>
           </Tooltip>
         </div>
       </div>
 
-      {/* Row 2: Secondary toolbar — icons left, status + actions right */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 8px',
-        height: 32,
-        background: darkMode ? '#1f2227' : '#f3f2f2',
-        borderBottom: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
-      }}>
-        {/* Left icon cluster */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          <Tooltip title="Undo"><Button type="text" size="small" icon={<UndoOutlined />} style={iconBtnStyle} /></Tooltip>
-          <Tooltip title="Redo"><Button type="text" size="small" icon={<RedoOutlined />} style={iconBtnStyle} /></Tooltip>
-          <div style={{ width: 1, height: 16, background: '#d8dde6', margin: '0 4px' }} />
-          <Tooltip title="Cut"><Button type="text" size="small" icon={<ScissorOutlined />} style={iconBtnStyle} /></Tooltip>
-          <Tooltip title="Copy"><Button type="text" size="small" icon={<CopyOutlined />} style={iconBtnStyle} /></Tooltip>
-          <Tooltip title="Delete"><Button type="text" size="small" icon={<DeleteColumnOutlined />} style={iconBtnStyle} /></Tooltip>
-          <div style={{ width: 1, height: 16, background: '#d8dde6', margin: '0 4px' }} />
-          <Tooltip title={toolboxOpen ? 'Hide Toolbox' : 'Show Toolbox'}>
-            <Button type="text" size="small" icon={<AppstoreOutlined />} style={{ ...iconBtnStyle, color: toolboxOpen ? PRIMARY : '#706e6b' }} onClick={onToggleToolbox} />
+      <div
+        className="flex items-center px-2 h-8 border-b"
+        style={{
+          background: darkMode ? '#1f2227' : '#f3f2f2',
+          borderColor: darkMode ? '#2e3138' : '#d8dde6',
+        }}
+      >
+        <div className="flex items-center gap-0">
+          <Tooltip content="Undo">
+            <Button appearance="subtle" className={iconBtnStyle} />
           </Tooltip>
-          <Tooltip title="Execution History"><Button type="text" size="small" icon={<HistoryOutlined />} style={iconBtnStyle} onClick={() => setShowExecutionPanel(!showExecutionPanel)} /></Tooltip>
-        </div>
-
-        {/* Left divider */}
-        <div style={{ width: 1, height: 20, background: '#d8dde6', flexShrink: 0 , marginLeft: 10, marginRight: 10}} />
-
-        {/* Center: Workflow Tabs (horizontally scrollable) */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'hidden',
-            margin: '0 6px',
-            display: 'flex',
-            alignItems: 'center',
-            minWidth: 0,
-          }}
-        >
-          {openTabs.length > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                overflowX: 'auto',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                maxWidth: '100%',
-              }}
-              className="hide-scrollbar"
+          <Tooltip content="Redo">
+            <Button appearance="subtle" className={iconBtnStyle} />
+          </Tooltip>
+          <div className="w-px h-4 bg-[#d8dde6] mx-1" />
+          <Tooltip content="Cut">
+            <Button appearance="subtle" className={iconBtnStyle}><Icons.Scissor /></Button>
+          </Tooltip>
+          <Tooltip content="Copy">
+            <Button appearance="subtle" className={iconBtnStyle}><Icons.Copy /></Button>
+          </Tooltip>
+          <Tooltip content="Delete">
+            <Button appearance="subtle" className={iconBtnStyle}><Icons.TableColumnDelete /></Button>
+          </Tooltip>
+          <div className="w-px h-4 bg-[#d8dde6] mx-1" />
+          <Tooltip content={toolboxOpen ? 'Hide Toolbox' : 'Show Toolbox'}>
+            <Button
+              appearance="subtle"
+              className={iconBtnStyle}
+              style={{ color: toolboxOpen ? PRIMARY : '#706e6b' }}
+              onClick={onToggleToolbox}
             >
+              <Icons.Appstore />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Execution History">
+            <Button appearance="subtle" className={iconBtnStyle} onClick={() => setShowExecutionPanel(!showExecutionPanel)}>
+              <Icons.History />
+            </Button>
+          </Tooltip>
+        </div>
+        <div className="w-px h-5 bg-[#d8dde6] flex-shrink-0 mx-2" />
+        <div className="flex-1 overflow-hidden mx-1.5 flex items-center min-w-0">
+          {openTabs.length > 0 && (
+            <div className="flex items-center gap-0.5 overflow-x-auto max-w-full hide-scrollbar">
               {openTabs.map((tab) => {
                 const isActive = tab.id === activeTabId;
                 return (
@@ -335,53 +300,27 @@ export default function Toolbar({
                     key={tab.id}
                     onClick={() => switchTab(tab.id)}
                     onMouseDown={(e) => {
-                      if (e.button === 1) { e.preventDefault(); closeTab(tab.id); }
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        closeTab(tab.id);
+                      }
                     }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '0 8px',
-                      height: 22,
-                      cursor: 'pointer',
-                      background: isActive ? '#fff' : 'transparent',
-                      borderRadius: 3,
-                      border: isActive ? '1px solid #d8dde6' : '1px solid transparent',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      transition: 'all 0.1s',
-                    }}
-                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#e8e8e8'; }}
-                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                    className={`flex items-center gap-1 px-2 h-[22px] cursor-pointer rounded border whitespace-nowrap flex-shrink-0 transition-all ${
+                      isActive ? 'bg-white border-[#d8dde6]' : 'bg-transparent border-transparent hover:bg-[#e8e8e8]'
+                    }`}
                   >
                     <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: isActive ? 600 : 400,
-                        color: isActive ? PRIMARY : '#555',
-                        maxWidth: 120,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
+                      className="text-[10px] max-w-[120px] overflow-hidden text-ellipsis"
+                      style={{ fontWeight: isActive ? 600 : 400, color: isActive ? PRIMARY : '#555' }}
                     >
                       {tab.name}
                     </span>
                     <span
-                      onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
-                      style={{
-                        fontSize: 9,
-                        color: '#999',
-                        lineHeight: 1,
-                        width: 12,
-                        height: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 2,
-                        flexShrink: 0,
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#ccc'; e.currentTarget.style.color = '#333'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#999'; }}
+                      className="text-[9px] w-3 h-3 flex items-center justify-center rounded text-[#999] hover:bg-[#ccc] hover:text-[#333]"
                     >
                       ✕
                     </span>
@@ -391,39 +330,42 @@ export default function Toolbar({
             </div>
           )}
         </div>
-
-        {/* Right divider */}
-        <div style={{ width: 1, height: 20, background: '#d8dde6', flexShrink: 0, marginRight: 10 }} />
-
-        {/* Right side: status + action buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className="w-px h-5 bg-[#d8dde6] flex-shrink-0 mr-2" />
+        <div className="flex items-center gap-1">
           {currentWorkflow && (
             <>
-              <span style={{ fontSize: 11, color: '#706e6b' }}>
+              <span className="text-[11px] text-[#706e6b]">
                 {currentWorkflow.updatedAt ? `Saved ${timeAgo(currentWorkflow.updatedAt)}` : ''}
               </span>
-              <Tag color="default" style={{ margin: 0, fontSize: 10, fontWeight: 600, lineHeight: '16px' }}>DRAFT</Tag>
+              <Lozenge appearance="default">DRAFT</Lozenge>
             </>
           )}
-          <div style={{ width: 1, height: 14, background: '#d8dde6', margin: '0 2px' }} />
-          <Button type="text" size="small" onClick={handleRun} disabled={!currentWorkflow} icon={<PlayCircleOutlined style={{ color: '#389e0d' }} />} style={{ color: '#389e0d', fontWeight: 600, fontSize: 11 }}>Run</Button>
-          <Button type="text" size="small" onClick={handleDebug} disabled={!currentWorkflow} icon={<BugOutlined style={{ color: '#d48806' }} />} style={{ color: '#d48806', fontWeight: 600, fontSize: 11 }}>Debug</Button>
-          <Button type="text" size="small" onClick={handleExport} disabled={!currentWorkflow} icon={<ExportOutlined style={{ color: '#1677ff' }} />} style={{ color: '#1677ff', fontWeight: 600, fontSize: 11 }}>Export</Button>
-          <Button type="text" size="small" onClick={handleImport} icon={<ImportOutlined style={{ color: '#722ed1' }} />} style={{ color: '#722ed1', fontWeight: 600, fontSize: 11 }}>Import</Button>
-          <Button type="text" size="small" onClick={handleDelete} disabled={!currentWorkflow} icon={<DeleteOutlined style={{ color: '#cf1322' }} />} style={{ color: '#cf1322', fontWeight: 600, fontSize: 11 }}>Delete</Button>
-          <Button type="text" size="small" onClick={handleSave} disabled={!currentWorkflow} icon={<SaveOutlined style={{ color: '#08979c' }} />} style={{ color: '#08979c', fontWeight: 600, fontSize: 11 }}>Save</Button>
-          <Button type="text" size="small" onClick={handleDownload} disabled={!currentWorkflow} icon={<FileImageFilled style={{ color: '#08979c' }} />} style={{ color: '#08979c', fontWeight: 600, fontSize: 11 }}>PNG</Button>
+          <div className="w-px h-3.5 bg-[#d8dde6] mx-0.5" />
+          <Button appearance="subtle" onClick={handleRun} isDisabled={!currentWorkflow} className="!text-green-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Play /> Run</span>
+          </Button>
+          <Button appearance="subtle" onClick={handleDebug} isDisabled={!currentWorkflow} className="!text-amber-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Bug /> Debug</span>
+          </Button>
+          <Button appearance="subtle" onClick={handleExport} isDisabled={!currentWorkflow} className="!text-blue-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Download /> Export</span>
+          </Button>
+          <Button appearance="subtle" onClick={handleImport} className="!text-violet-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Upload /> Import</span>
+          </Button>
+          <Button appearance="subtle" onClick={handleDelete} isDisabled={!currentWorkflow} className="!text-red-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Delete /> Delete</span>
+          </Button>
+          <Button appearance="subtle" onClick={handleSave} isDisabled={!currentWorkflow} className="!text-teal-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Save /> Save</span>
+          </Button>
+          <Button appearance="subtle" onClick={handleDownload} isDisabled={!currentWorkflow} className="!text-teal-600 font-semibold text-[11px]">
+            <span className="flex items-center gap-1"><Icons.Image /> PNG</span>
+          </Button>
         </div>
       </div>
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
+      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleFileChange} />
 
       <ConfigManager open={showConfigManager} onClose={() => setShowConfigManager(false)} />
       <ConfigStoreManager open={showConfigStoreManager} onClose={() => setShowConfigStoreManager(false)} />
@@ -432,47 +374,57 @@ export default function Toolbar({
       <EmailTriggerManager open={showEmailTriggerManager} onClose={() => setShowEmailTriggerManager(false)} />
       <HttpTriggerManager open={showHttpTriggerManager} onClose={() => setShowHttpTriggerManager(false)} />
 
-      <Modal
-        title="Create New Workflow"
-        open={showNewDialog}
-        onOk={handleNew}
-        onCancel={() => setShowNewDialog(false)}
-        okText="Create"
-        width={380}
-      >
-        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600 }}>Name</label>
-            <Input
-              size="small"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="My Workflow"
-              autoFocus
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600 }}>Description</label>
-            <TextArea
-              size="small"
-              rows={2}
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              placeholder="Description..."
-            />
-          </div>
-        </Space>
-      </Modal>
+      {showNewDialog && (
+        <ModalDialog onClose={() => setShowNewDialog(false)}>
+          <ModalHeader>
+            <ModalTitle>Create New Workflow</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold">Name</label>
+              <TextField value={newName} onChange={(e) => setNewName(e.currentTarget.value)} placeholder="My Workflow" />
+              <label className="text-xs font-semibold">Description</label>
+              <textarea
+                className="w-full min-h-[60px] p-2 border border-[#dfe1e6] rounded text-sm"
+                placeholder="Description..."
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button appearance="primary" onClick={handleNew}>
+              Create
+            </Button>
+            <Button appearance="subtle" onClick={() => setShowNewDialog(false)}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
+
+      {deleteConfirm && (
+        <ModalDialog onClose={() => setDeleteConfirm(null)}>
+          <ModalHeader>
+            <ModalTitle>Delete Workflow</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p>Delete &quot;{deleteConfirm.name}&quot;?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button appearance="primary" onClick={deleteConfirm.onConfirm} className="!bg-red-600 hover:!bg-red-700">
+              Delete
+            </Button>
+            <Button appearance="subtle" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
     </>
   );
 }
-
-const iconBtnStyle: React.CSSProperties = {
-  color: '#706e6b',
-  width: 24,
-  height: 24,
-  fontSize: 12,
-};
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();

@@ -1,7 +1,6 @@
-import { Input, Select, InputNumber, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const EMAIL_RECEIVE_NODE_DOC: NodeDoc = {
   title: 'Receive Email Trigger',
@@ -46,70 +45,38 @@ export default function EmailReceiveNodeConfig({ properties, updateProp, configs
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Email Config</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select email server..."
-          value={properties.configId || undefined}
-          onChange={(val) => updateProp('configId', val)}
-          options={emailConfigs.map((c) => ({
-            value: c.id,
-            label: `${c.name} (${c.config?.host || 'smtp'})`,
-          }))}
-          notFoundContent={
-            <Text type="secondary" style={{ fontSize: 10, padding: 4 }}>
-              No email configs. Add one in ⚙ Configs.
-            </Text>
-          }
-        />
+        <Text strong className="text-[10px] block mb-0.5">Email Config</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.configId != null ? String(properties.configId) : ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('configId', e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Select email server...</option>
+          {emailConfigs.map((c) => (
+            <option key={c.id} value={c.id}>{c.name} ({(c.config as { host?: string })?.host || 'smtp'})</option>
+          ))}
+        </select>
+        {emailConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b] block mt-0.5">No email configs. Add one in ⚙ Configs.</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Mailbox</Text>
-        <Input
-          size="small"
-          placeholder="INBOX"
-          value={properties.mailbox || ''}
-          onChange={(e) => updateProp('mailbox', e.target.value)}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          IMAP folder to poll (default: INBOX)
-        </Text>
+        <Text strong className="text-[10px] block mb-0.5">Mailbox</Text>
+        <TextField placeholder="INBOX" value={(properties.mailbox as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('mailbox', e.target.value)} />
+        <Text className="text-[9px] text-[#706e6b]">IMAP folder to poll (default: INBOX)</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Poll Interval (sec)</Text>
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
-          min={10}
-          max={3600}
-          value={properties.pollIntervalSec || 60}
-          onChange={(val) => updateProp('pollIntervalSec', val)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Poll Interval (sec)</Text>
+        <input type="number" min={10} max={3600} className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1" value={properties.pollIntervalSec ?? 60} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('pollIntervalSec', e.target.value === '' ? undefined : Number(e.target.value))} />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Mark as Read</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          value={properties.markSeen !== false ? 'yes' : 'no'}
-          onChange={(val) => updateProp('markSeen', val === 'yes')}
-          options={[
-            { value: 'yes', label: 'Yes — mark fetched emails as read' },
-            { value: 'no', label: 'No — leave emails as unread' },
-          ]}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Mark as Read</Text>
+        <select className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white" value={properties.markSeen !== false ? 'yes' : 'no'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('markSeen', e.target.value === 'yes')}>
+          <option value="yes">Yes — mark fetched emails as read</option>
+          <option value="no">No — leave emails as unread</option>
+        </select>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Max Fetch per Poll</Text>
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
-          min={1}
-          max={100}
-          value={properties.maxFetch || 10}
-          onChange={(val) => updateProp('maxFetch', val)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Max Fetch per Poll</Text>
+        <input type="number" min={1} max={100} className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1" value={properties.maxFetch ?? 10} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('maxFetch', e.target.value === '' ? undefined : Number(e.target.value))} />
       </div>
     </>
   );

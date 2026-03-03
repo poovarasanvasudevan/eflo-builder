@@ -1,30 +1,7 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import {
-  PlayCircleOutlined,
-  StopOutlined,
-  GlobalOutlined,
-  ClockCircleOutlined,
-  BranchesOutlined,
-  FileTextOutlined,
-  ToolOutlined,
-  DatabaseOutlined,
-  FieldTimeOutlined,
-  NotificationOutlined,
-  MailOutlined,
-  InboxOutlined,
-  FolderOpenOutlined,
-  EditOutlined,
-  CodeOutlined,
-  ApartmentOutlined,
-  PartitionOutlined,
-  CloudServerOutlined,
-  ForwardOutlined,
-  ApiOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
 import { PRIMARY } from '../theme';
+import { Icons } from '../components/ui/Icons';
 
-/* Salesforce Flow Builder style node: big colored icon box + label underneath */
 function FlowNode({
   icon,
   bg,
@@ -95,9 +72,9 @@ function FlowNode({
 function StartNode({ data }: NodeProps) {
   return (
     <FlowNode
-      icon={<PlayCircleOutlined />}
+      icon={<Icons.Play />}
       bg="#4bc076"
-      label={(data as any).label || 'Start'}
+      label={(data as Record<string, unknown>).label as string || 'Start'}
       hasTarget={false}
     />
   );
@@ -106,46 +83,46 @@ function StartNode({ data }: NodeProps) {
 function EndNode({ data }: NodeProps) {
   return (
     <FlowNode
-      icon={<StopOutlined />}
+      icon={<Icons.Stop />}
       bg="#e8647c"
-      label={(data as any).label || 'End'}
+      label={(data as Record<string, unknown>).label as string || 'End'}
       hasSource={false}
     />
   );
 }
 
 function HttpRequestNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<GlobalOutlined />}
+      icon={<Icons.Globe />}
       bg={PRIMARY}
-      label={(data as any).label || 'HTTP Request'}
-      subtitle={`${props.method || 'GET'} ${props.url ? props.url.substring(0, 18) : ''}`}
+      label={(data as Record<string, unknown>).label as string || 'HTTP Request'}
+      subtitle={`${props.method || 'GET'} ${props.url ? String(props.url).substring(0, 18) : ''}`}
     />
   );
 }
 
 function DelayNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<ClockCircleOutlined />}
+      icon={<Icons.Clock />}
       bg="#f4c542"
-      label={(data as any).label || 'Delay'}
+      label={(data as Record<string, unknown>).label as string || 'Delay'}
       subtitle={`${props.durationMs || 1000}ms`}
     />
   );
 }
 
 function ConditionNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<BranchesOutlined />}
+      icon={<Icons.Branch />}
       bg="#f49756"
-      label={(data as any).label || 'Decision'}
-      subtitle={props.expression || ''}
+      label={(data as Record<string, unknown>).label as string || 'Decision'}
+      subtitle={(props.expression as string) || ''}
       sourceHandles={[
         { id: 'true', left: '30%', label: 'Yes' },
         { id: 'false', left: '70%', label: 'No' },
@@ -155,149 +132,149 @@ function ConditionNode({ data }: NodeProps) {
 }
 
 function LogNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<FileTextOutlined />}
+      icon={<Icons.FileText />}
       bg="#54b7d3"
-      label={(data as any).label || 'Log'}
-      subtitle={props.message ? props.message.substring(0, 20) : ''}
+      label={(data as Record<string, unknown>).label as string || 'Log'}
+      subtitle={props.message ? String(props.message).substring(0, 20) : ''}
     />
   );
 }
 
 function TransformNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<ToolOutlined />}
+      icon={<Icons.Tool />}
       bg="#f49756"
-      label={(data as any).label || 'Transform'}
-      subtitle={props.expression ? props.expression.substring(0, 20) : ''}
+      label={(data as Record<string, unknown>).label as string || 'Transform'}
+      subtitle={props.expression ? String(props.expression).substring(0, 20) : ''}
     />
   );
 }
 
 function FunctionNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   const code = (props.code as string) || '';
   return (
     <FlowNode
-      icon={<CodeOutlined />}
+      icon={<Icons.Code />}
       bg="#9b59b6"
-      label={(data as any).label || 'Function'}
+      label={(data as Record<string, unknown>).label as string || 'Function'}
       subtitle={code ? code.substring(0, 20) + (code.length > 20 ? '...' : '') : 'JavaScript'}
     />
   );
 }
 
 function RedisNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<DatabaseOutlined />}
+      icon={<Icons.Database />}
       bg="#d63031"
-      label={(data as any).label || 'Redis'}
+      label={(data as Record<string, unknown>).label as string || 'Redis'}
       subtitle={`${props.operation || ''} ${props.key || ''}`}
     />
   );
 }
 
 function CronNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<FieldTimeOutlined />}
+      icon={<Icons.Schedule />}
       bg="#2e7d32"
-      label={(data as any).label || 'Cron'}
-      subtitle={props.expression || '* * * * *'}
+      label={(data as Record<string, unknown>).label as string || 'Cron'}
+      subtitle={(props.expression as string) || '* * * * *'}
       hasTarget={false}
     />
   );
 }
 
 function RedisSubscribeNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<NotificationOutlined />}
+      icon={<Icons.Bell />}
       bg="#c0392b"
-      label={(data as any).label || 'Redis Subscribe'}
-      subtitle={props.channel || 'channel'}
+      label={(data as Record<string, unknown>).label as string || 'Redis Subscribe'}
+      subtitle={(props.channel as string) || 'channel'}
       hasTarget={false}
     />
   );
 }
 
 function EmailNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<MailOutlined />}
+      icon={<Icons.Mail />}
       bg="#8e44ad"
-      label={(data as any).label || 'Send Email'}
-      subtitle={props.to ? props.to.substring(0, 18) : 'to@...'}
+      label={(data as Record<string, unknown>).label as string || 'Send Email'}
+      subtitle={props.to ? String(props.to).substring(0, 18) : 'to@...'}
     />
   );
 }
 
 function EmailReceiveNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<InboxOutlined />}
+      icon={<Icons.Inbox />}
       bg="#6c3483"
-      label={(data as any).label || 'Receive Email'}
-      subtitle={props.mailbox || 'INBOX'}
+      label={(data as Record<string, unknown>).label as string || 'Receive Email'}
+      subtitle={(props.mailbox as string) || 'INBOX'}
       hasTarget={false}
     />
   );
 }
 
 function ReadFileNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<FolderOpenOutlined />}
+      icon={<Icons.Folder />}
       bg="#2980b9"
-      label={(data as any).label || 'Read File'}
-      subtitle={props.path ? props.path.split('/').pop() : 'file...'}
+      label={(data as Record<string, unknown>).label as string || 'Read File'}
+      subtitle={props.path ? String(props.path).split('/').pop() : 'file...'}
     />
   );
 }
 
 function WriteFileNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<EditOutlined />}
+      icon={<Icons.Edit />}
       bg="#27ae60"
-      label={(data as any).label || 'Write File'}
-      subtitle={props.path ? props.path.split('/').pop() : 'file...'}
+      label={(data as Record<string, unknown>).label as string || 'Write File'}
+      subtitle={props.path ? String(props.path).split('/').pop() : 'file...'}
     />
   );
 }
 
 function ExecNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<CodeOutlined />}
+      icon={<Icons.Code />}
       bg="#2c3e50"
-      label={(data as any).label || 'Exec'}
-      subtitle={props.command ? props.command.substring(0, 20) : 'command...'}
+      label={(data as Record<string, unknown>).label as string || 'Exec'}
+      subtitle={props.command ? String(props.command).substring(0, 20) : 'command...'}
     />
   );
 }
 
 function SshNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<CloudServerOutlined />}
+      icon={<Icons.CloudServer />}
       bg="#16a085"
-      label={(data as any).label || 'SSH'}
-      subtitle={props.command ? props.command.substring(0, 20) : 'command...'}
+      label={(data as Record<string, unknown>).label as string || 'SSH'}
+      subtitle={props.command ? String(props.command).substring(0, 20) : 'command...'}
     />
   );
 }
@@ -305,9 +282,9 @@ function SshNode({ data }: NodeProps) {
 function HttpInNode({ data }: NodeProps) {
   return (
     <FlowNode
-      icon={<GlobalOutlined />}
+      icon={<Icons.Globe />}
       bg="#3498db"
-      label={(data as any).label || 'HTTP In'}
+      label={(data as Record<string, unknown>).label as string || 'HTTP In'}
       subtitle="/api/in/..."
       hasTarget={false}
     />
@@ -317,30 +294,30 @@ function HttpInNode({ data }: NodeProps) {
 function HttpOutNode({ data }: NodeProps) {
   return (
     <FlowNode
-      icon={<GlobalOutlined />}
+      icon={<Icons.Globe />}
       bg="#2ecc71"
-      label={(data as any).label || 'HTTP Out'}
+      label={(data as Record<string, unknown>).label as string || 'HTTP Out'}
       subtitle="Send response"
     />
   );
 }
 
 function DatabaseNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   const q = (props.query as string) || '';
   return (
     <FlowNode
-      icon={<DatabaseOutlined />}
+      icon={<Icons.Database />}
       bg="#2980b9"
-      label={(data as any).label || 'Database'}
+      label={(data as Record<string, unknown>).label as string || 'Database'}
       subtitle={q ? q.replace(/\s+/g, ' ').trim().substring(0, 24) : 'SQL...'}
     />
   );
 }
 
 function SwitchNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
-  const cases: { label: string; value: string }[] = props.cases || [];
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
+  const cases: { label: string; value: string }[] = (props.cases as { label: string; value: string }[]) || [];
   const handles = cases.map((c, i) => ({
     id: c.label || c.value || `case_${i}`,
     left: `${((i + 1) / (cases.length + 2)) * 100}%`,
@@ -353,71 +330,71 @@ function SwitchNode({ data }: NodeProps) {
   });
   return (
     <FlowNode
-      icon={<ApartmentOutlined />}
+      icon={<Icons.Apartment />}
       bg="#e67e22"
-      label={(data as any).label || 'Switch'}
-      subtitle={props.expression || ''}
+      label={(data as Record<string, unknown>).label as string || 'Switch'}
+      subtitle={(props.expression as string) || ''}
       sourceHandles={handles.length > 1 ? handles : undefined}
     />
   );
 }
 
 function SubFlowNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<PartitionOutlined />}
+      icon={<Icons.Partition />}
       bg="#1a5276"
-      label={(data as any).label || 'Flow'}
-      subtitle={props.workflow_name || `ID: ${props.workflow_id || '?'}`}
+      label={(data as Record<string, unknown>).label as string || 'Flow'}
+      subtitle={(props.workflow_name as string) || `ID: ${props.workflow_id || '?'}`}
     />
   );
 }
 
 function ContinueNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<ForwardOutlined />}
+      icon={<Icons.Forward />}
       bg="#16a085"
-      label={(data as any).label || 'Continue'}
+      label={(data as Record<string, unknown>).label as string || 'Continue'}
       subtitle={props.after_node_label ? `after: ${props.after_node_label}` : 'after node'}
     />
   );
 }
 
 function GraphQLNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   const url = (props.url as string) || '';
   return (
     <FlowNode
-      icon={<ApiOutlined />}
+      icon={<Icons.Api />}
       bg="#e535ab"
-      label={(data as any).label || 'GraphQL'}
+      label={(data as Record<string, unknown>).label as string || 'GraphQL'}
       subtitle={url ? url.replace(/^https?:\/\//, '').substring(0, 24) : 'endpoint'}
     />
   );
 }
 
 function GetConfigStoreNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<SafetyCertificateOutlined />}
+      icon={<Icons.Safety />}
       bg="#16a085"
-      label={(data as any).label || 'Get Config Store'}
+      label={(data as Record<string, unknown>).label as string || 'Get Config Store'}
       subtitle={(props.key as string) || 'key'}
     />
   );
 }
 
 function SetConfigStoreNode({ data }: NodeProps) {
-  const props = (data as any).properties || {};
+  const props = ((data as Record<string, unknown>).properties as Record<string, unknown>) || {};
   return (
     <FlowNode
-      icon={<SafetyCertificateOutlined />}
+      icon={<Icons.Safety />}
       bg="#1abc9c"
-      label={(data as any).label || 'Set Config Store'}
+      label={(data as Record<string, unknown>).label as string || 'Set Config Store'}
       subtitle={(props.key as string) || 'key'}
     />
   );

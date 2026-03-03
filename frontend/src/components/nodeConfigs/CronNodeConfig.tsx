@@ -1,7 +1,6 @@
-import { Input, Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const CRON_NODE_DOC: NodeDoc = {
   title: 'Cron Trigger',
@@ -60,57 +59,54 @@ const TIMEZONES = [
 ];
 
 export default function CronNodeConfig({ properties, updateProp }: NodeConfigProps) {
+  const payloadStr = typeof properties.payload === 'string' ? properties.payload : (properties.payload ? JSON.stringify(properties.payload) : '');
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Preset</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Choose a preset..."
-          allowClear
-          value={undefined as string | undefined}
-          onChange={(val) => val != null && updateProp('expression', val)}
-          options={PRESETS}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Preset</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value=""
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { const val = e.target.value; if (val) updateProp('expression', val); }}
+        >
+          <option value="">Choose a preset...</option>
+          {PRESETS.map((p) => (
+            <option key={p.value} value={p.value}>{p.label}</option>
+          ))}
+        </select>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Cron Expression</Text>
-        <Input
-          size="small"
-          style={{ fontFamily: 'monospace' }}
+        <Text strong className="text-[10px] block mb-0.5">Cron Expression</Text>
+        <TextField
           placeholder="* * * * *"
-          value={properties.expression || ''}
-          onChange={(e) => updateProp('expression', e.target.value)}
+          value={(properties.expression as string) || ''}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('expression', e.target.value)}
+          className="font-mono"
         />
-        <Text type="secondary" style={{ fontSize: 9, display: 'block', marginTop: 2 }}>
-          min hour dom month dow
-        </Text>
+        <Text className="text-[9px] text-[#706e6b] block mt-0.5">min hour dom month dow</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Timezone</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          showSearch
+        <Text strong className="text-[10px] block mb-0.5">Timezone</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
           value={(properties.timezone as string) || 'UTC'}
-          onChange={(val) => updateProp('timezone', val)}
-          options={TIMEZONES}
-        />
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('timezone', e.target.value)}
+        >
+          {TIMEZONES.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Payload (optional)</Text>
-        <Input.TextArea
-          size="small"
-          rows={2}
-          style={{ fontFamily: 'monospace', fontSize: 10 }}
+        <Text strong className="text-[10px] block mb-0.5">Payload (optional)</Text>
+        <textarea
+          className="w-full min-h-[40px] p-2 border border-[#dfe1e6] rounded text-[10px] font-mono resize-y"
           placeholder='{"key": "value"}'
-          value={properties.payload || ''}
-          onChange={(e) => updateProp('payload', e.target.value)}
+          value={payloadStr}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateProp('payload', e.target.value)}
+          rows={2}
         />
-        <Text type="secondary" style={{ fontSize: 10 }}>
-          JSON payload passed to downstream nodes.
-        </Text>
+        <Text className="text-[10px] text-[#706e6b]">JSON payload passed to downstream nodes.</Text>
       </div>
     </>
   );

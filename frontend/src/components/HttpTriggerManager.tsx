@@ -1,27 +1,13 @@
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Modal,
-  Input,
-  Select,
-  Table,
-  Space,
-  Switch,
-  Popconfirm,
-  Typography,
-  Tag,
-  message,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  GlobalOutlined,
-} from '@ant-design/icons';
+import Button from '@atlaskit/button';
+import ModalDialog, { ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+import TextField from '@atlaskit/textfield';
+import Lozenge from '@atlaskit/lozenge';
 import { useWorkflowStore } from '../store/workflowStore';
 import type { HttpTrigger } from '../api/client';
-
-const { Text } = Typography;
+import { useToast } from '../context/ToastContext';
+import { Text } from './ui/Text';
+import { Icons } from './ui/Icons';
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
@@ -52,14 +38,15 @@ export default function HttpTriggerManager({ open, onClose }: { open: boolean; o
   const [form, setForm] = useState<FormState>(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     if (open) {
       fetchHttpTriggers();
       fetchWorkflows();
     }
-  }, [open]);
+  }, [open, fetchHttpTriggers, fetchWorkflows]);
 
   const openNew = () => {
     setForm(defaultForm);
@@ -80,11 +67,11 @@ export default function HttpTriggerManager({ open, onClose }: { open: boolean; o
 
   const handleSave = async () => {
     if (!form.workflowId) {
-      messageApi.warning('Workflow is required');
+      toast.warning('Workflow is required');
       return;
     }
     if (!form.path.trim()) {
-      messageApi.warning('Path is required (e.g. webhook or api/events)');
+      toast.warning('Path is required (e.g. webhook or api/events)');
       return;
     }
     const path = form.path.trim().replace(/^\/+/, '').replace(/^api\/in\/?/, '');
@@ -97,173 +84,139 @@ export default function HttpTriggerManager({ open, onClose }: { open: boolean; o
     try {
       if (editingId) {
         await editHttpTrigger(editingId, payload);
-        messageApi.success('HTTP trigger updated');
+        toast.success('HTTP trigger updated');
       } else {
         await addHttpTrigger(payload);
-        messageApi.success('HTTP trigger created');
+        toast.success('HTTP trigger created');
       }
       setFormOpen(false);
     } catch {
-      messageApi.error('Failed to save HTTP trigger');
+      toast.error('Failed to save HTTP trigger');
     }
   };
 
   const handleToggle = async (t: HttpTrigger, enabled: boolean) => {
     try {
       await editHttpTrigger(t.id, { ...t, enabled });
-      messageApi.success(enabled ? 'Trigger enabled' : 'Trigger disabled');
+      toast.success(enabled ? 'Trigger enabled' : 'Trigger disabled');
     } catch {
-      messageApi.error('Failed to update');
+      toast.error('Failed to update');
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await removeHttpTrigger(id);
-      messageApi.success('HTTP trigger deleted');
+      toast.success('HTTP trigger deleted');
+      setDeleteConfirmId(null);
     } catch {
-      messageApi.error('Failed to delete');
+      toast.error('Failed to delete');
     }
   };
 
   const workflowName = (id: number) => workflows.find((w) => w.id === id)?.name || `#${id}`;
   const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/in` : '/api/in';
 
-  const columns = [
-    {
-      title: 'Workflow',
-      dataIndex: 'workflowId',
-      key: 'workflowId',
-      render: (id: number) => <Text strong style={{ fontSize: 11 }}>{workflowName(id)}</Text>,
-    },
-    {
-      title: 'Method',
-      dataIndex: 'method',
-      key: 'method',
-      width: 80,
-      render: (m: string) => <Tag style={{ fontSize: 10 }}>{m || 'POST'}</Tag>,
-    },
-    {
-      title: 'Path',
-      dataIndex: 'path',
-      key: 'path',
-      render: (path: string) => (
-        <Text code style={{ fontSize: 10 }}>{path || '/'}</Text>
-      ),
-    },
-    {
-      title: 'URL',
-      key: 'url',
-      render: (_: unknown, record: HttpTrigger) => (
-        <Text type="secondary" style={{ fontSize: 10 }}>
-          {baseUrl}/{record.path || 'webhook'}
-        </Text>
-      ),
-    },
-    {
-      title: 'On',
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 50,
-      render: (enabled: boolean, record: HttpTrigger) => (
-        <Switch size="small" checked={enabled} onChange={(v) => handleToggle(record, v)} />
-      ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 70,
-      render: (_: unknown, record: HttpTrigger) => (
-        <Space size={4}>
-          <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-          <Popconfirm title="Delete?" onConfirm={() => handleDelete(record.id)} okButtonProps={{ danger: true }}>
-            <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  if (!open) return null;
 
   return (
-    <Modal
-      title={
-        <Space>
-          <GlobalOutlined />
-          <span>HTTP Triggers (HTTP-in / HTTP-out)</span>
-        </Space>
-      }
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={720}
-    >
-      {contextHolder}
-      <div style={{ marginBottom: 8 }}>
-        <Button size="small" type="primary" icon={<PlusOutlined />} onClick={openNew}>
-          Add HTTP Trigger
-        </Button>
-        <Text type="secondary" style={{ marginLeft: 8, fontSize: 11 }}>
-          Requests to /api/in/&#123;path&#125; run the workflow; use HTTP-out node to send the response.
-        </Text>
-      </div>
+    <>
+      <ModalDialog onClose={onClose} width="720px">
+        <ModalHeader>
+          <ModalTitle><span className="flex items-center gap-2"><Icons.Globe /> HTTP Triggers (HTTP-in / HTTP-out)</span></ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="mb-2 flex items-center gap-2 flex-wrap">
+            <Button appearance="primary" onClick={openNew}>
+              <span className="flex items-center gap-1"><Icons.Plus /> Add HTTP Trigger</span>
+            </Button>
+            <Text className="text-[11px] text-[#706e6b]">Requests to /api/in/&#123;path&#125; run the workflow; use HTTP-out node to send the response.</Text>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px] border-collapse">
+              <thead>
+                <tr className="border-b border-[#e8e8e8]">
+                  <th className="text-left py-2 px-2 font-semibold">Workflow</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[80px]">Method</th>
+                  <th className="text-left py-2 px-2 font-semibold">Path</th>
+                  <th className="text-left py-2 px-2 font-semibold">URL</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[50px]">On</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[70px]" />
+                </tr>
+              </thead>
+              <tbody>
+                {httpTriggers.length === 0 && (
+                  <tr><td colSpan={6} className="py-4 text-center text-[#706e6b]">No HTTP triggers. Add one to expose a workflow as an HTTP endpoint.</td></tr>
+                )}
+                {httpTriggers.map((record) => (
+                  <tr key={record.id} className="border-b border-[#f0f0f0]">
+                    <td className="py-2 px-2"><Text strong className="text-[11px]">{workflowName(record.workflowId)}</Text></td>
+                    <td className="py-2 px-2"><Lozenge>{record.method || 'POST'}</Lozenge></td>
+                    <td className="py-2 px-2 font-mono text-[10px]">{record.path || '/'}</td>
+                    <td className="py-2 px-2 text-[10px] text-[#706e6b]">{baseUrl}/{record.path || 'webhook'}</td>
+                    <td className="py-2 px-2">
+                      <input type="checkbox" checked={record.enabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleToggle(record, e.target.checked)} className="rounded" />
+                    </td>
+                    <td className="py-2 px-2">
+                      <button type="button" className="p-0.5 rounded hover:bg-black/10 mr-0.5" onClick={() => openEdit(record)} aria-label="Edit"><Icons.Edit /></button>
+                      <button type="button" className="p-0.5 rounded hover:bg-red-100 text-red-600" onClick={() => setDeleteConfirmId(record.id)} aria-label="Delete"><Icons.Delete /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ModalBody>
+      </ModalDialog>
 
-      <Table
-        dataSource={httpTriggers}
-        columns={columns}
-        rowKey="id"
-        size="small"
-        pagination={false}
-        style={{ fontSize: 11 }}
-        locale={{ emptyText: 'No HTTP triggers. Add one to expose a workflow as an HTTP endpoint.' }}
-      />
+      {formOpen && (
+        <ModalDialog onClose={() => setFormOpen(false)} width="400px">
+          <ModalHeader><ModalTitle>{editingId ? 'Edit HTTP Trigger' : 'New HTTP Trigger'}</ModalTitle></ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-2">
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Workflow</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.workflowId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, workflowId: e.target.value ? Number(e.target.value) : undefined })}>
+                  <option value="">Select workflow (must have HTTP-in trigger node)...</option>
+                  {workflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Path</Text>
+                <div className="flex items-center rounded border border-[#dfe1e6] overflow-hidden">
+                  <span className="bg-[#f5f5f5] px-2 py-1 text-[10px] text-[#706e6b]">/api/in/</span>
+                  <TextField placeholder="webhook or api/events" value={form.path} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, path: e.target.value })} />
+                </div>
+                <Text className="text-[9px] text-[#706e6b]">URL path after /api/in/ (e.g. webhook)</Text>
+              </div>
+              <div>
+                <Text strong className="text-[10px] block mb-0.5">Method</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, method: e.target.value })}>
+                  {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="http-enabled" checked={form.enabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, enabled: e.target.checked })} className="rounded" />
+                <label htmlFor="http-enabled"><Text strong className="text-[10px]">Enabled</Text></label>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button appearance="primary" onClick={handleSave}>{editingId ? 'Update' : 'Create'}</Button>
+            <Button appearance="subtle" onClick={() => setFormOpen(false)}>Cancel</Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
 
-      <Modal
-        title={editingId ? 'Edit HTTP Trigger' : 'New HTTP Trigger'}
-        open={formOpen}
-        onOk={handleSave}
-        onCancel={() => setFormOpen(false)}
-        okText={editingId ? 'Update' : 'Create'}
-        width={400}
-      >
-        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Workflow</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              placeholder="Select workflow (must have HTTP-in trigger node)..."
-              value={form.workflowId}
-              onChange={(val) => setForm({ ...form, workflowId: val })}
-              options={workflows.map((wf) => ({ value: wf.id, label: wf.name }))}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Path</Text>
-            <Input
-              size="small"
-              placeholder="webhook or api/events"
-              value={form.path}
-              onChange={(e) => setForm({ ...form, path: e.target.value })}
-              addonBefore="/api/in/"
-            />
-            <Text type="secondary" style={{ fontSize: 9 }}>URL path after /api/in/ (e.g. webhook)</Text>
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Method</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              value={form.method}
-              onChange={(val) => setForm({ ...form, method: val })}
-              options={METHODS.map((m) => ({ value: m, label: m }))}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Enabled</Text>
-            <Switch size="small" checked={form.enabled} onChange={(v) => setForm({ ...form, enabled: v })} />
-          </div>
-        </Space>
-      </Modal>
-    </Modal>
+      {deleteConfirmId != null && (
+        <ModalDialog onClose={() => setDeleteConfirmId(null)}>
+          <ModalHeader><ModalTitle>Delete?</ModalTitle></ModalHeader>
+          <ModalFooter>
+            <Button appearance="primary" className="!bg-red-600 hover:!bg-red-700" onClick={() => handleDelete(deleteConfirmId)}>Delete</Button>
+            <Button appearance="subtle" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
+    </>
   );
 }

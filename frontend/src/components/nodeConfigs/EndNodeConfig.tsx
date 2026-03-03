@@ -1,7 +1,5 @@
-import { Typography } from 'antd';
 import type { NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const END_NODE_DOC: NodeDoc = {
   title: 'End',
@@ -26,8 +24,6 @@ export const END_NODE_DOC: NodeDoc = {
 
 export default function EndNodeConfig() {
   return (
-    <Text type="secondary" style={{ fontSize: 11 }}>
-      End node passes through data. No configuration needed.
-    </Text>
+    <Text className="text-[#706e6b] text-[11px]">End node passes through data. No configuration needed.</Text>
   );
 }

@@ -1,12 +1,12 @@
-import { Table, Button, Tooltip, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { HistoryOutlined, EditOutlined } from '@ant-design/icons';
-import { useWorkflowStore } from '../store/workflowStore';
 import { useNavigate } from 'react-router';
+import Tooltip from '@atlaskit/tooltip';
+import Spinner from '@atlaskit/spinner';
+import { useWorkflowStore } from '../store/workflowStore';
 import PageLayout from '../components/PageLayout';
+import { Text } from '../components/ui/Text';
+import { Icons } from '../components/ui/Icons';
 import type { Workflow } from '../api/client';
-
-const { Text } = Typography;
 
 function formatDuration(sec: number): string {
   if (sec < 1) return `${(sec * 1000).toFixed(0)}ms`;
@@ -33,89 +33,62 @@ export default function Flows() {
     fetchWorkflows().finally(() => setLoading(false));
   }, [fetchWorkflows]);
 
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      width: 260,
-      render: (name: string, record: Workflow) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Text strong style={{ fontSize: 12 }}>{name}</Text>
-          <Tooltip title="Open in Builder">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              style={{ padding: '0 4px', height: 22 }}
-              onClick={() => openInBuilder(record.id)}
-            />
-          </Tooltip>
-        </div>
-      ),
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-      render: (v: string) => (v ? <Text type="secondary" style={{ fontSize: 11 }}>{v}</Text> : '—'),
-    },
-    {
-      title: 'Updated',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
-      width: 180,
-      render: (v: string) => (v ? <Text style={{ fontSize: 11 }}>{new Date(v).toLocaleString()}</Text> : '—'),
-    },
-    {
-      title: 'Last run',
-      dataIndex: 'lastRunAt',
-      key: 'lastRunAt',
-      width: 180,
-      render: (v: string) => (v ? <Text style={{ fontSize: 11 }}>{new Date(v).toLocaleString()}</Text> : '—'),
-    },
-    {
-      title: 'Avg run time',
-      dataIndex: 'avgRunTimeSec',
-      key: 'avgRunTimeSec',
-      width: 180,
-      render: (v: number) => (v != null ? <Text style={{ fontSize: 11 }}>{formatDuration(v)}</Text> : '—'),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 56,
-      render: (_: unknown, record: Workflow) => (
-        <Tooltip title="View executions">
-          <Button
-            type="text"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => navigate(`/flows/${record.id}/executions`)}
-            style={{ padding: '0 4px' }}
-          />
-        </Tooltip>
-      ),
-    },
-  ];
-
   return (
     <PageLayout title="Flows">
-      <Table
-        size="small"
-        columns={columns}
-        dataSource={workflows}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} flows`,
-        }}
-        style={{ fontSize: 12 }}
-        locale={{ emptyText: 'No flows yet. Create one in Builder.' }}
-      />
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Spinner size="large" />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[#e8e8e8]">
+                <th className="text-left py-2 px-2 font-semibold text-[#16325c]" style={{ width: 260 }}>Name</th>
+                <th className="text-left py-2 px-2 font-semibold text-[#16325c]">Description</th>
+                <th className="text-left py-2 px-2 font-semibold text-[#16325c]" style={{ width: 180 }}>Updated</th>
+                <th className="text-left py-2 px-2 font-semibold text-[#16325c]" style={{ width: 180 }}>Last run</th>
+                <th className="text-left py-2 px-2 font-semibold text-[#16325c]" style={{ width: 180 }}>Avg run time</th>
+                <th className="text-left py-2 px-2 font-semibold text-[#16325c]" style={{ width: 56 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {workflows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-[#706e6b]">No flows yet. Create one in Builder.</td>
+                </tr>
+              )}
+              {workflows.map((record: Workflow) => (
+                <tr key={record.id} className="border-b border-[#f0f0f0] hover:bg-black/[0.02]">
+                  <td className="py-2 px-2">
+                    <div className="flex items-center gap-1.5">
+                      <Text strong className="text-xs">{record.name}</Text>
+                      <Tooltip content="Open in Builder">
+                        <button type="button" className="p-0.5 rounded hover:bg-black/10" onClick={() => openInBuilder(record.id)}>
+                          <Icons.Edit />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </td>
+                  <td className="py-2 px-2 max-w-[200px] truncate">
+                    {record.description ? <Text className="text-[11px] text-[#706e6b]">{record.description}</Text> : '—'}
+                  </td>
+                  <td className="py-2 px-2 text-[11px]">{record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '—'}</td>
+                  <td className="py-2 px-2 text-[11px]">{record.lastRunAt ? new Date(record.lastRunAt).toLocaleString() : '—'}</td>
+                  <td className="py-2 px-2 text-[11px]">{record.avgRunTimeSec != null ? formatDuration(record.avgRunTimeSec) : '—'}</td>
+                  <td className="py-2 px-2">
+                    <Tooltip content="View executions">
+                      <button type="button" className="p-0.5 rounded hover:bg-black/10" onClick={() => navigate(`/flows/${record.id}/executions`)}>
+                        <Icons.History />
+                      </button>
+                    </Tooltip>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </PageLayout>
   );
 }

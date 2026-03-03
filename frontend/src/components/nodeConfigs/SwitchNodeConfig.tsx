@@ -1,7 +1,7 @@
-import { Input, Button, Divider, Typography } from 'antd';
+import Button from '@atlaskit/button';
+import TextField from '@atlaskit/textfield';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const SWITCH_NODE_DOC: NodeDoc = {
   title: 'Switch (Multi-Decision)',
@@ -38,61 +38,20 @@ export default function SwitchNodeConfig({ properties, updateProp }: NodeConfigP
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Expression</Text>
-        <Input
-          size="small"
-          placeholder="statusCode or json.type"
-          value={properties.expression || ''}
-          onChange={(e) => updateProp('expression', e.target.value)}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          Evaluated against input. Result is matched to cases.
-        </Text>
+        <Text strong className="text-[10px] block mb-0.5">Expression</Text>
+        <TextField placeholder="statusCode or json.type" value={(properties.expression as string) || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('expression', e.target.value)} />
+        <Text className="text-[9px] text-[#706e6b]">Evaluated against input. Result is matched to cases.</Text>
       </div>
-      <Divider style={{ margin: '4px 0', fontSize: 9 }}>Cases</Divider>
+      <div className="border-t border-[#e8e8e8] my-1 py-1 text-[9px] text-[#706e6b]">Cases</div>
       {cases.map((c, i) => (
-        <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <Input
-            size="small"
-            placeholder="Label"
-            style={{ width: '45%' }}
-            value={c.label || ''}
-            onChange={(e) => {
-              const next = [...cases];
-              next[i] = { ...next[i], label: e.target.value };
-              updateProp('cases', next);
-            }}
-          />
-          <Input
-            size="small"
-            placeholder="Value"
-            style={{ width: '45%' }}
-            value={c.value || ''}
-            onChange={(e) => {
-              const next = [...cases];
-              next[i] = { ...next[i], value: e.target.value };
-              updateProp('cases', next);
-            }}
-          />
-          <span
-            style={{ cursor: 'pointer', color: '#e8647c', fontSize: 12, fontWeight: 700 }}
-            onClick={() => {
-              const next = [...cases];
-              next.splice(i, 1);
-              updateProp('cases', next);
-            }}
-          >✕</span>
+        <div key={i} className="flex gap-1 items-center">
+          <input className="w-[45%] text-xs border border-[#dfe1e6] rounded px-2 py-1" placeholder="Label" value={c.label || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const next = [...cases]; next[i] = { ...next[i], label: e.target.value }; updateProp('cases', next); }} />
+          <input className="w-[45%] text-xs border border-[#dfe1e6] rounded px-2 py-1" placeholder="Value" value={c.value || ''} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const next = [...cases]; next[i] = { ...next[i], value: e.target.value }; updateProp('cases', next); }} />
+          <button type="button" className="cursor-pointer text-red-500 text-xs font-bold leading-none p-0.5" onClick={() => { const next = [...cases]; next.splice(i, 1); updateProp('cases', next); }}>✕</button>
         </div>
       ))}
-      <Button
-        size="small"
-        type="dashed"
-        style={{ width: '100%', fontSize: 10 }}
-        onClick={() => updateProp('cases', [...cases, { label: '', value: '' }])}
-      >+ Add Case</Button>
-      <Text type="secondary" style={{ fontSize: 9 }}>
-        Non-matching values route to the "Default" handle.
-      </Text>
+      <Button appearance="subtle" onClick={() => updateProp('cases', [...cases, { label: '', value: '' }])} className="!text-[10px] w-full">+ Add Case</Button>
+      <Text className="text-[9px] text-[#706e6b]">Non-matching values route to the &quot;Default&quot; handle.</Text>
     </>
   );
 }

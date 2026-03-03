@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router';
-import { Button, Input, Spin, message, Dropdown } from 'antd';
-import { SaveOutlined, CloseOutlined, MoreOutlined } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
+import Button from '@atlaskit/button';
+import Spinner from '@atlaskit/spinner';
 import PageLayout from '../components/PageLayout';
 import ConfluenceArticleLayout, { ChangesSavedBadge } from '../components/kb/ConfluenceArticleLayout';
 import { kbGet, kbCreate, kbUpdate, type KBArticle } from '../api/client';
 import { slugify } from '../utils/slugify';
+import { useToast } from '../context/ToastContext';
+import { Icons } from '../components/ui/Icons';
 import type { KBEditorRef } from '../components/kb/KBEditor';
 
 const KBEditor = lazy(() => import('../components/kb/KBEditor').then((m) => ({ default: m.default })));
@@ -18,7 +19,7 @@ export default function KBArticleEdit() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  // /kb/new has no :id param (literal path), so detect by pathname
+  const toast = useToast();
   const isNew = location.pathname === '/kb/new' || id === 'new';
   const [article, setArticle] = useState<KBArticle | null>(isNew ? { id: 0, title: '', slug: '', summary: '', spaceKey: SPACE, createdAt: '', updatedAt: '' } : null);
   const [loading, setLoading] = useState(!isNew);
@@ -53,7 +54,7 @@ export default function KBArticleEdit() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      message.warning('Title is required');
+      toast.warning('Title is required');
       return;
     }
     const content = editorRef.current?.getJSON() ?? undefined;
@@ -69,7 +70,7 @@ export default function KBArticleEdit() {
           parentId: null,
           spaceKey: SPACE,
         });
-        message.success('Article created');
+        toast.success('Article created');
         navigate(`/kb/${res.data.id}`);
       } else if (article?.id) {
         await kbUpdate(article.id, {
@@ -80,13 +81,13 @@ export default function KBArticleEdit() {
           parentId: article.parentId ?? null,
           spaceKey: SPACE,
         });
-        message.success('Saved');
+        toast.success('Saved');
         setSaved(true);
         setArticle((prev) => prev ? { ...prev, title: title.trim(), slug: slug.trim() || slugify(title), summary: summary.trim() } : null);
         setTimeout(() => setSaved(false), 3000);
       }
     } catch {
-      message.error('Failed to save');
+      toast.error('Failed to save');
     } finally {
       setSaving(false);
     }
@@ -95,8 +96,8 @@ export default function KBArticleEdit() {
   if (loading && !isNew) {
     return (
       <PageLayout>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-          <Spin size="large" />
+        <div className="flex justify-center py-12">
+          <Spinner size="large" />
         </div>
       </PageLayout>
     );
@@ -105,7 +106,7 @@ export default function KBArticleEdit() {
   if (!isNew && !article) {
     return (
       <PageLayout>
-        <div style={{ padding: 24 }}>
+        <div className="p-6">
           <p>Article not found.</p>
           <Link to="/kb">Back to Knowledge Base</Link>
         </div>
@@ -123,52 +124,38 @@ export default function KBArticleEdit() {
         ]}
         statusTag="DRAFT"
         titleArea={
-          <Input
+          <input
             placeholder="Page title"
             value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            bordered={false}
-            style={{ fontSize: 28, fontWeight: 600, padding: 0 }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTitleChange(e.target.value)}
+            className="w-full text-[28px] font-semibold p-0 border-0 bg-transparent outline-none"
           />
         }
         descriptionArea={
-          <Input.TextArea
+          <textarea
             placeholder="Describe when someone would need this information. For example 'when connecting to wi-fi for the first time'."
             value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            bordered={false}
-            autoSize={{ minRows: 2, maxRows: 4 }}
-            style={{ color: '#6b778c', fontSize: 14, padding: 0, resize: 'none' }}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSummary(e.target.value)}
+            className="w-full text-sm text-[#6b778c] p-0 border-0 bg-transparent resize-none outline-none min-h-[52px]"
+            rows={2}
           />
         }
         footerLeft={saved ? <ChangesSavedBadge /> : null}
         footerRight={
-          <>
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
-              Publish
+          <div className="flex items-center gap-2">
+            <Button appearance="primary" isDisabled={saving} onClick={handleSave}>
+              <span className="flex items-center gap-1">{saving ? 'Saving…' : <><Icons.Save /> Publish</>}</span>
             </Button>
-            <Button icon={<CloseOutlined />} onClick={() => navigate(isNew ? '/kb' : `/kb/${id}`)}>
-              Close
+            <Button appearance="subtle" onClick={() => navigate(isNew ? '/kb' : `/kb/${id}`)}>
+              <span className="flex items-center gap-1"><Icons.Close /> Close</span>
             </Button>
-            <Dropdown
-              menu={{
-                items: [
-                  { key: 'close', label: 'Close without publishing' },
-                ] as MenuProps['items'],
-              }}
-              trigger={['click']}
-            >
-              <Button type="text" icon={<MoreOutlined />} />
-            </Dropdown>
-          </>
+          </div>
         }
       >
-        <div style={{ border: '1px solid #dfe1e6', borderRadius: 4, background: '#fff', minHeight: 320 }}>
+        <div className="border border-[#dfe1e6] rounded bg-white min-h-[320px]">
           <Suspense
             fallback={
-              <div style={{ padding: 24, color: '#6b778c', fontSize: 13 }}>
-                Loading editor…
-              </div>
+              <div className="p-6 text-[#6b778c] text-[13px]">Loading editor…</div>
             }
           >
             <KBEditor

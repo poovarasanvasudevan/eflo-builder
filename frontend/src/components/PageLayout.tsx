@@ -1,23 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ConfigProvider, theme } from 'antd';
 import { Link, useLocation } from 'react-router';
-import { Button, Tooltip, Typography } from 'antd';
-import { HomeOutlined, UnorderedListOutlined, EditOutlined, BulbOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { PRIMARY, splunkTheme } from '../theme';
-import '../splunkui.css';
-
-const { Text } = Typography;
-
-const lightTheme = {
-  algorithm: theme.compactAlgorithm,
-  token: {
-    fontSize: 12,
-    colorPrimary: PRIMARY,
-    controlHeight: 26,
-    borderRadius: 0,
-    fontFamily: `"Splunk Platform Sans", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
-  },
-};
+import Button from '@atlaskit/button';
+import Tooltip from '@atlaskit/tooltip';
+import { PRIMARY } from '../theme';
+import { Icons } from './ui/Icons';
 
 interface PageLayoutProps {
   title?: string;
@@ -49,112 +35,76 @@ export default function PageLayout({ title, children }: PageLayoutProps) {
     });
   };
 
+  const navLinkClass = (active: boolean) =>
+    `text-sm font-medium px-2 py-1 rounded text-white hover:bg-white/10 ${active ? 'text-amber-300' : ''}`;
+
   return (
-    <ConfigProvider theme={darkMode ? splunkTheme : lightTheme}>
-      <div
-        className={darkMode ? 'app-root-dark' : 'app-root-light'}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          fontFamily: "'Salesforce Sans', 'Inter', -apple-system, sans-serif",
-        }}
+    <div className={`flex flex-col h-full ${darkMode ? 'app-root-dark' : 'app-root-light'}`}>
+      <header
+        className="flex items-center px-3 h-[42px] flex-shrink-0"
+        style={{ background: PRIMARY, color: '#fff' }}
       >
-        {/* Row 1: Same header as wf-new — PRIMARY bar, no right controls */}
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 12px',
-            height: 42,
-            background: PRIMARY,
-            color: '#fff',
-            flexShrink: 0,
-          }}
-        >
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', textDecoration: 'none' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>⚡ Flow Builder</span>
+        <Link to="/" className="flex items-center gap-2 text-white no-underline">
+          <span className="text-[13px] font-bold tracking-wide">⚡ Flow Builder</span>
+        </Link>
+        <div className="w-px h-4 bg-white/30 ml-3" />
+        <nav className="flex items-center gap-1 ml-2">
+          <Link to="/" className={navLinkClass(location.pathname === '/' || location.pathname === '/home')}>
+            <span className="flex items-center gap-1.5">
+              <Icons.Home />
+              Home
+            </span>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)', marginLeft: 12 }} />
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
-            <Link to="/">
-              <Button
-                type="text"
-                size="small"
-                icon={<HomeOutlined />}
-                style={{
-                  color: location.pathname === '/' || location.pathname === '/home' ? '#ffd700' : '#fff',
-                }}
-              >
-                Home
-              </Button>
-            </Link>
-            <Link to="/flows">
-              <Button
-                type="text"
-                size="small"
-                icon={<UnorderedListOutlined />}
-                style={{
-                  color: location.pathname === '/flows' || location.pathname.startsWith('/flows/') ? '#ffd700' : '#fff',
-                }}
-              >
-                Flows
-              </Button>
-            </Link>
-            <Link to="/wf-new">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                style={{
-                  color: location.pathname === '/wf-new' ? '#ffd700' : '#fff',
-                }}
-              >
-                Builder
-              </Button>
-            </Link>
-          </nav>
-          <div style={{ flex: 1 }} />
-          <Tooltip title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
-            <Button type="text" size="small" icon={<BulbOutlined />} style={{ color: '#fff' }} onClick={toggleDarkMode} />
-          </Tooltip>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.3)', margin: '0 4px' }} />
-          <Tooltip title="Help">
-            <Button type="text" size="small" icon={<QuestionCircleOutlined />} style={{ color: '#fff' }} />
-          </Tooltip>
-        </header>
+          <Link to="/flows" className={navLinkClass(location.pathname === '/flows' || location.pathname.startsWith('/flows/'))}>
+            <span className="flex items-center gap-1.5">
+              <Icons.List />
+              Flows
+            </span>
+          </Link>
+          <Link to="/wf-new" className={navLinkClass(location.pathname === '/wf-new')}>
+            <span className="flex items-center gap-1.5">
+              <Icons.Edit />
+              Builder
+            </span>
+          </Link>
+          <Link to="/kb" className={navLinkClass(location.pathname === '/kb' || location.pathname.startsWith('/kb/'))}>
+            <span className="flex items-center gap-1.5">
+              <Icons.Book />
+              Knowledge Base
+            </span>
+          </Link>
+        </nav>
+        <div className="flex-1" />
+        <Tooltip content={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+          <Button appearance="subtle" onClick={toggleDarkMode} className="[&_span]:!text-white">
+            <Icons.Lightbulb />
+          </Button>
+        </Tooltip>
+        <div className="w-px h-4 bg-white/30 mx-1" />
+        <Tooltip content="Help">
+          <Button appearance="subtle" className="[&_span]:!text-white">
+            <Icons.Question />
+          </Button>
+        </Tooltip>
+      </header>
 
-        {/* Row 2: Page title bar — same density as wf-new secondary toolbar */}
-        {title != null && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px',
-              height: 32,
-              background: darkMode ? '#1f2227' : '#f3f2f2',
-              borderBottom: darkMode ? '1px solid #2e3138' : '1px solid #d8dde6',
-              flexShrink: 0,
-            }}
-          >
-            <Text strong style={{ fontSize: 12, color: darkMode ? '#e2e8f0' : '#16325c' }}>
-              {title}
-            </Text>
-          </div>
-        )}
-
-        {/* Content — same density: compact padding, no right sidebar */}
-        <main
+      {title != null && (
+        <div
+          className="flex items-center px-3 h-8 flex-shrink-0 border-b"
           style={{
-            flex: 1,
-            overflow: 'auto',
-            padding: 12,
-            minHeight: 0,
+            background: darkMode ? '#1f2227' : '#f3f2f2',
+            borderColor: darkMode ? '#2e3138' : '#d8dde6',
           }}
         >
-          {children}
-        </main>
-      </div>
-    </ConfigProvider>
+          <span className="text-xs font-semibold" style={{ color: darkMode ? '#e2e8f0' : '#16325c' }}>
+            {title}
+          </span>
+        </div>
+      )}
+
+      <main className="flex-1 overflow-auto p-3 min-h-0">
+        {children}
+      </main>
+    </div>
   );
 }

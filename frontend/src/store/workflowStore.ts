@@ -42,7 +42,12 @@ import {
   getConfigStoreList,
   setConfigStoreEntry as setConfigStoreEntryApi,
   deleteConfigStoreEntry as deleteConfigStoreEntryApi,
+  getFolders,
+  createFolder as createFolderApi,
+  updateFolder as updateFolderApi,
+  deleteFolder as deleteFolderApi,
   type Workflow,
+  type WorkflowFolder,
   type Execution,
   type ExecutionLog,
   type NodeConfig,
@@ -66,6 +71,7 @@ interface TabCanvasState {
 interface WorkflowState {
   // Workflow list
   workflows: Workflow[];
+  folders: WorkflowFolder[];
   currentWorkflow: Workflow | null;
   loading: boolean;
 
@@ -109,11 +115,17 @@ interface WorkflowState {
 
   // Actions - workflow CRUD
   fetchWorkflows: () => Promise<void>;
+  fetchFolders: () => Promise<void>;
   loadWorkflow: (id: number) => Promise<void>;
   saveWorkflow: () => Promise<void>;
-  createNewWorkflow: (name: string, description: string) => Promise<void>;
+  createNewWorkflow: (name: string, description: string, folderId?: number | null) => Promise<void>;
   removeWorkflow: (id: number) => Promise<void>;
   importFlow: (data: any) => Promise<void>;
+  createFolder: (name: string, parentId?: number | null) => Promise<WorkflowFolder>;
+  updateFolder: (id: number, data: Partial<WorkflowFolder>) => Promise<void>;
+  deleteFolder: (id: number) => Promise<void>;
+  updateWorkflowName: (id: number, name: string) => Promise<void>;
+  moveWorkflowToFolder: (workflowId: number, folderId: number | null) => Promise<void>;
 
   // Actions - tabs
   switchTab: (id: number) => void;
@@ -204,6 +216,7 @@ const savedTabs = loadTabsFromStorage();
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   workflows: [],
+  folders: [],
   currentWorkflow: null,
   loading: false,
   openTabs: savedTabs.openTabs,
@@ -238,6 +251,53 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     } finally {
       set({ loading: false });
     }
+  },
+
+  fetchFolders: async () => {
+    try {
+      const res = await getFolders();
+      set({ folders: res.data || [] });
+    } catch {
+      set({ folders: [] });
+    }
+  },
+
+  createFolder: async (name: string, parentId?: number | null) => {
+    const res = await createFolderApi({ name, parentId: parentId ?? undefined });
+    set((s) => ({ folders: [...s.folders, res.data] }));
+    return res.data;
+  },
+
+  updateFolder: async (id: number, data: Partial<WorkflowFolder>) => {
+    await updateFolderApi(id, data);
+    set((s) => ({
+      folders: s.folders.map((f) => (f.id === id ? { ...f, ...data } : f)),
+    }));
+  },
+
+  deleteFolder: async (id: number) => {
+    await deleteFolderApi(id);
+    await get().fetchFolders();
+    await get().fetchWorkflows();
+  },
+
+  updateWorkflowName: async (id: number, name: string) => {
+    const w = get().workflows.find((wf) => wf.id === id);
+    if (!w) return;
+    await updateWorkflow(w.id, { ...w, name });
+    set((s) => ({
+      workflows: s.workflows.map((wf) => (wf.id === id ? { ...wf, name } : wf)),
+      currentWorkflow: s.currentWorkflow?.id === id ? { ...s.currentWorkflow, name } : s.currentWorkflow,
+    }));
+  },
+
+  moveWorkflowToFolder: async (workflowId: number, folderId: number | null) => {
+    const w = get().workflows.find((wf) => wf.id === workflowId);
+    if (!w) return;
+    await updateWorkflow(workflowId, { ...w, folderId });
+    set((s) => ({
+      workflows: s.workflows.map((wf) => (wf.id === workflowId ? { ...wf, folderId } : wf)),
+    }));
   },
 
   loadWorkflow: async (id: number) => {
@@ -287,6 +347,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         targetHandle: e.targetHandle,
         label: e.label,
         animated: true,
+        data: { description: e.description ?? '' },
       }));
 
       // Save current tab state before switching
@@ -338,6 +399,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         sourceHandle: e.sourceHandle || '',
         targetHandle: e.targetHandle || '',
         label: typeof e.label === 'string' ? e.label : '',
+        description: (e.data as any)?.description ?? '',
       })),
     };
 
@@ -357,11 +419,12 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }
   },
 
-  createNewWorkflow: async (name: string, description: string) => {
+  createNewWorkflow: async (name: string, description: string, folderId?: number | null) => {
     const { openTabs, activeTabId, nodes, edges, tabStates } = get();
     const res = await createWorkflow({
       name,
       description,
+      folderId: folderId ?? undefined,
       definition: { nodes: [], edges: [] },
     });
     const wf = res.data;

@@ -1,10 +1,9 @@
-import { Input, Typography } from 'antd';
+import TextField from '@atlaskit/textfield';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-github';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const GRAPHQL_NODE_DOC: NodeDoc = {
   title: 'GraphQL',
@@ -35,17 +34,16 @@ export default function GraphQLNodeConfig({ properties, updateProp }: NodeConfig
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>GraphQL URL</Text>
-        <Input
-          size="small"
+        <Text strong className="text-[10px] block mb-0.5">GraphQL URL</Text>
+        <TextField
           placeholder="https://api.example.com/graphql"
           value={(properties.url as string) || ''}
-          onChange={(e) => updateProp('url', e.target.value)}
-          style={{ fontFamily: 'monospace', fontSize: 10 }}
+          onChange={(e) => updateProp('url', e.currentTarget.value)}
+          className="font-mono text-[10px]"
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Query</Text>
+        <Text strong className="text-[10px] block mb-0.5">Query</Text>
         <AceEditor
           mode="text"
           theme="github"
@@ -62,7 +60,7 @@ export default function GraphQLNodeConfig({ properties, updateProp }: NodeConfig
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Variables (JSON)</Text>
+        <Text strong className="text-[10px] block mb-0.5">Variables (JSON)</Text>
         <AceEditor
           mode="json"
           theme="github"
@@ -77,9 +75,7 @@ export default function GraphQLNodeConfig({ properties, updateProp }: NodeConfig
           style={{ width: '100%', minHeight: 120, borderRadius: 4, border: '1px solid #d9d9d9' }}
           editorProps={{ $blockScrolling: true }}
         />
-        <Text type="secondary" style={{ fontSize: 9, display: 'block', marginTop: 4 }}>
-          Use {'{{key}}'} or {'{{input.key}}'} to substitute from the previous node (e.g. {'{{userId}}'}, {'{{input.id}}'}).
-        </Text>
+        <Text className="text-[9px] text-[#706e6b] block mt-1">Use {'{{key}}'} or {'{{input.key}}'} to substitute from the previous node (e.g. {'{{userId}}'}, {'{{input.id}}'}).</Text>
       </div>
     </>
   );

@@ -1,7 +1,5 @@
-import { InputNumber, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const DELAY_NODE_DOC: NodeDoc = {
   title: 'Delay',
@@ -29,13 +27,13 @@ export const DELAY_NODE_DOC: NodeDoc = {
 export default function DelayNodeConfig({ properties, updateProp }: NodeConfigProps) {
   return (
     <div>
-      <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Duration (ms)</Text>
-      <InputNumber
-        size="small"
-        style={{ width: '100%' }}
+      <Text strong className="text-[10px] block mb-0.5">Duration (ms)</Text>
+      <input
+        type="number"
         min={0}
-        value={properties.durationMs || 1000}
-        onChange={(val) => updateProp('durationMs', val)}
+        className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
+        value={properties.durationMs ?? 1000}
+        onChange={(e) => updateProp('durationMs', e.target.value === '' ? undefined : Number(e.target.value))}
       />
     </div>
   );

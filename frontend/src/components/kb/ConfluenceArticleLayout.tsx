@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
-import { Tag } from 'antd';
-import { CheckCircleOutlined } from '@ant-design/icons';
+import Lozenge from '@atlaskit/lozenge';
+import { Icons } from '../ui/Icons';
 
 interface ConfluenceArticleLayoutProps {
   /** Breadcrumb items: e.g. [{ title: 'KB', path: '/kb' }, { title: 'Pages' }, { title: 'Article title' }] */
@@ -54,9 +54,9 @@ export default function ConfluenceArticleLayout({
             </span>
           ))}
           {statusTag && (
-            <Tag color="default" style={{ marginLeft: 8, fontSize: 11 }}>
-              {statusTag}
-            </Tag>
+            <span className="ml-2">
+              <Lozenge appearance="default">{statusTag}</Lozenge>
+            </span>
           )}
         </div>
         {headerActions}
@@ -105,8 +105,8 @@ export default function ConfluenceArticleLayout({
 
 export function ChangesSavedBadge() {
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <CheckCircleOutlined style={{ color: '#36b37e' }} />
+    <span className="flex items-center gap-1 text-[#36b37e]">
+      <Icons.CheckCircle />
       <span>Changes saved</span>
     </span>
   );

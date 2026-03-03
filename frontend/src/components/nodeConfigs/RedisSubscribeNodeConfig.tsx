@@ -1,7 +1,6 @@
-import { Input, Select, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
+import TextField from '@atlaskit/textfield';
 
 export const REDIS_SUBSCRIBE_NODE_DOC: NodeDoc = {
   title: 'Redis Subscribe Trigger',
@@ -36,48 +35,38 @@ export default function RedisSubscribeNodeConfig({ properties, updateProp, confi
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Server Config</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select Redis server..."
-          value={properties.configId || undefined}
-          onChange={(val) => updateProp('configId', val)}
-          options={redisConfigs.map((c) => ({
-            value: c.id,
-            label: `${c.name} (${c.config?.host || '127.0.0.1'}:${c.config?.port || 6379})`,
-          }))}
-          notFoundContent={
-            <Text type="secondary" style={{ fontSize: 10, padding: 4 }}>
-              No Redis configs. Add one in ⚙ Configs.
-            </Text>
-          }
-        />
+        <Text strong className="text-[10px] block mb-0.5">Server Config</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.configId != null ? String(properties.configId) : ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('configId', e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Select Redis server...</option>
+          {redisConfigs.map((c) => (
+            <option key={c.id} value={c.id}>{c.name} ({(c.config as { host?: string })?.host || '127.0.0.1'}:{(c.config as { port?: number })?.port || 6379})</option>
+          ))}
+        </select>
+        {redisConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b] block mt-0.5">No Redis configs. Add one in ⚙ Configs.</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Channel / Pattern</Text>
-        <Input
-          size="small"
+        <Text strong className="text-[10px] block mb-0.5">Channel / Pattern</Text>
+        <TextField
           placeholder="my-channel or my-*"
-          value={properties.channel || ''}
-          onChange={(e) => updateProp('channel', e.target.value)}
+          value={(properties.channel as string) || ''}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('channel', e.target.value)}
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Mode</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
+        <Text strong className="text-[10px] block mb-0.5">Mode</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
           value={properties.isPattern ? 'pattern' : 'channel'}
-          onChange={(val) => updateProp('isPattern', val === 'pattern')}
-          options={[
-            { value: 'channel', label: 'SUBSCRIBE — exact channel' },
-            { value: 'pattern', label: 'PSUBSCRIBE — glob pattern' },
-          ]}
-        />
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          Pattern mode supports * and ? wildcards.
-        </Text>
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('isPattern', e.target.value === 'pattern')}
+        >
+          <option value="channel">SUBSCRIBE — exact channel</option>
+          <option value="pattern">PSUBSCRIBE — glob pattern</option>
+        </select>
+        <Text className="text-[9px] text-[#706e6b]">Pattern mode supports * and ? wildcards.</Text>
       </div>
     </>
   );

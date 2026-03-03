@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Input, Select, Typography } from 'antd';
+import TextField from '@atlaskit/textfield';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
 
 export const HTTP_REQUEST_NODE_DOC: NodeDoc = {
   title: 'HTTP Request',
@@ -76,54 +74,47 @@ export default function HttpRequestNodeConfig({ properties, updateProp }: NodeCo
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Method</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          value={properties.method || 'GET'}
-          onChange={(val) => updateProp('method', val)}
-          options={[
-            { value: 'GET', label: 'GET' },
-            { value: 'POST', label: 'POST' },
-            { value: 'PUT', label: 'PUT' },
-            { value: 'DELETE', label: 'DELETE' },
-            { value: 'PATCH', label: 'PATCH' },
-          ]}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Method</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={(properties.method as string) || 'GET'}
+          onChange={(e) => updateProp('method', e.target.value)}
+        >
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+          <option value="PATCH">PATCH</option>
+        </select>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>URL</Text>
-        <Input
-          size="small"
+        <Text strong className="text-[10px] block mb-0.5">URL</Text>
+        <TextField
           placeholder="https://api.example.com/data"
-          value={properties.url || ''}
-          onChange={(e) => updateProp('url', e.target.value)}
+          value={(properties.url as string) || ''}
+          onChange={(e) => updateProp('url', e.currentTarget.value)}
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Headers (JSON)</Text>
-        <TextArea
-          size="small"
-          rows={3}
-          style={{ fontFamily: 'monospace', fontSize: 10 }}
+        <Text strong className="text-[10px] block mb-0.5">Headers (JSON)</Text>
+        <textarea
+          className="w-full min-h-[60px] p-2 border rounded text-[10px] font-mono resize-y"
+          style={{ borderColor: headersError ? '#de350b' : '#dfe1e6' }}
           placeholder='{"Authorization": "Bearer token", "X-Custom": "value"}'
           value={headersText}
           onChange={(e) => applyHeaders(e.target.value)}
-          status={headersError ? 'error' : undefined}
+          rows={3}
         />
-        {headersError && (
-          <Text type="danger" style={{ fontSize: 9 }}>{headersError}</Text>
-        )}
+        {headersError && <Text className="text-[9px] text-red-600">{headersError}</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Body (JSON)</Text>
-        <TextArea
-          size="small"
-          rows={3}
-          style={{ fontFamily: 'monospace', fontSize: 10 }}
+        <Text strong className="text-[10px] block mb-0.5">Body (JSON)</Text>
+        <textarea
+          className="w-full min-h-[60px] p-2 border border-[#dfe1e6] rounded text-[10px] font-mono resize-y"
           placeholder='{"key": "value"}'
-          value={properties.body || ''}
+          value={(properties.body as string) || ''}
           onChange={(e) => updateProp('body', e.target.value)}
+          rows={3}
         />
       </div>
     </>

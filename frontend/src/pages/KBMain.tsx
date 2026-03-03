@@ -1,33 +1,27 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Input, Tree, Spin, Empty, Button, Dropdown, message } from 'antd';
-import type { DataNode } from 'antd/es/tree';
-import {
-  SearchOutlined,
-  PlusOutlined,
-  FileTextOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  MoreOutlined,
-} from '@ant-design/icons';
-import type { MenuProps } from 'antd';
+import TextField from '@atlaskit/textfield';
+import Button from '@atlaskit/button';
+import Spinner from '@atlaskit/spinner';
 import PageLayout from '../components/PageLayout';
 import { kbListTree, kbSearch, kbDelete, type KBArticle } from '../api/client';
 import { PRIMARY } from '../theme';
-import { slugify } from '../utils/slugify';
+import { useToast } from '../context/ToastContext';
+import { Icons } from '../components/ui/Icons';
+import { SimpleTree, type SimpleTreeNode } from '../components/ui/SimpleTree';
 
 const SPACE = 'main';
 
-function buildTree(articles: KBArticle[]): DataNode[] {
-  const byParent = (parentId: number | null): DataNode[] => {
+function buildTree(articles: KBArticle[]): SimpleTreeNode[] {
+  const byParent = (parentId: number | null): SimpleTreeNode[] => {
     return articles
       .filter((a) => (a.parentId ?? null) === parentId)
       .sort((a, b) => a.title.localeCompare(b.title))
       .map((a) => ({
         key: String(a.id),
         title: (
-          <Link to={`/kb/${a.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FileTextOutlined style={{ fontSize: 12, color: PRIMARY }} />
+          <Link to={`/kb/${a.id}`} className="flex items-center gap-1.5 text-inherit no-underline hover:underline">
+            <span style={{ color: PRIMARY }}><Icons.FileText /></span>
             <span>{a.title}</span>
           </Link>
         ),
@@ -46,6 +40,7 @@ export default function KBMain() {
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchInput, setSearchInput] = useState(q);
+  const toast = useToast();
 
   useEffect(() => {
     kbListTree(SPACE)
@@ -80,131 +75,95 @@ export default function KBMain() {
     kbDelete(id)
       .then(() => {
         setArticles((prev) => prev.filter((a) => a.id !== id));
-        message.success('Article deleted');
+        toast.success('Article deleted');
       })
-      .catch(() => message.error('Failed to delete'));
+      .catch(() => toast.error('Failed to delete'));
   };
 
   const showSearch = q.length > 0;
   const list = showSearch ? (searchResults ?? []) : articles.filter((a) => !a.parentId);
 
+  const ArticleRow = ({ a, showIcon }: { a: KBArticle; showIcon?: boolean }) => {
+    const [menuOpen, setMenuOpen] = useState(false);
+    return (
+      <li className="py-2 px-2.5 border-b border-[#f0f0f0] flex items-center justify-between group">
+        <Link to={`/kb/${a.id}`} className={`font-medium flex items-center gap-2 ${showIcon ? '' : ''}`}>
+          {showIcon && <span style={{ color: PRIMARY }}><Icons.FileText /></span>}
+          {a.title}
+        </Link>
+        <div className="relative">
+          <Button appearance="subtle" onClick={() => setMenuOpen((o) => !o)}>
+            <Icons.More />
+          </Button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" role="presentation" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 z-20 rounded bg-white border border-[#dfe1e6] shadow-lg py-1 min-w-[100px]">
+                <button type="button" className="block w-full text-left px-3 py-1.5 text-sm hover:bg-black/5" onClick={() => { setMenuOpen(false); window.location.href = `/kb/${a.id}/edit`; }}>Edit</button>
+                <button type="button" className="block w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50" onClick={() => { setMenuOpen(false); handleDelete(a.id, a.title); }}>Delete</button>
+              </div>
+            </>
+          )}
+        </div>
+      </li>
+    );
+  };
+
   return (
     <PageLayout title="Knowledge Base">
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <Input
-            size="small"
-            placeholder="Search articles..."
-            prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onPressEnter={() => onSearch(searchInput)}
-            style={{ width: 260 }}
-            allowClear
-          />
-          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => (window.location.href = '/kb/new')}>
-            Create article
+      <div className="flex flex-col h-full gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1">
+            <span className="text-[#8c8c8c] text-sm">🔍</span>
+            <TextField
+              placeholder="Search articles..."
+              value={searchInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && onSearch(searchInput)}
+            />
+          </div>
+          <Button appearance="primary" onClick={() => (window.location.href = '/kb/new')}>
+            <span className="flex items-center gap-1"><Icons.Plus /> Create article</span>
           </Button>
         </div>
 
-        <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
-          <div
-            style={{
-              width: 260,
-              flexShrink: 0,
-              border: '1px solid #e8e8e8',
-              borderRadius: 4,
-              padding: 8,
-              background: '#fafafa',
-              overflowY: 'auto',
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b778c', marginBottom: 6, textTransform: 'uppercase' }}>
-              Space: {SPACE}
-            </div>
+        <div className="flex gap-4 flex-1 min-h-0">
+          <div className="w-[260px] flex-shrink-0 border border-[#e8e8e8] rounded p-2 bg-[#fafafa] overflow-y-auto">
+            <div className="text-[11px] font-bold text-[#6b778c] uppercase mb-1.5">Space: {SPACE}</div>
             {loading ? (
-              <Spin size="small" />
+              <Spinner size="small" />
             ) : treeData.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No articles" style={{ margin: '16px 0' }} />
+              <div className="py-4 text-center text-sm text-[#706e6b]">No articles</div>
             ) : (
-              <Tree showLine blockNode defaultExpandAll treeData={treeData} style={{ background: 'transparent' }} />
+              <SimpleTree treeData={treeData} defaultExpandAll onSelect={(key) => (window.location.href = `/kb/${key}`)} />
             )}
           </div>
 
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+          <div className="flex-1 min-w-0 overflow-y-auto">
             {showSearch ? (
               <div>
-                <h3 style={{ fontSize: 13, color: '#6b778c', marginBottom: 8 }}>Search results for "{q}"</h3>
+                <h3 className="text-[13px] text-[#6b778c] mb-2">Search results for &quot;{q}&quot;</h3>
                 {searchLoading ? (
-                  <Spin />
+                  <Spinner size="small" />
                 ) : (searchResults ?? []).length === 0 ? (
-                  <Empty description="No results" />
+                  <div className="py-8 text-center text-[#706e6b]">No results</div>
                 ) : (
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <ul className="list-none p-0 m-0">
                     {(searchResults ?? []).map((a) => (
-                      <li
-                        key={a.id}
-                        style={{
-                          padding: '8px 10px',
-                          borderBottom: '1px solid #f0f0f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Link to={`/kb/${a.id}`} style={{ fontWeight: 500 }}>
-                          {a.title}
-                        </Link>
-                        <Dropdown
-                          menu={{
-                            items: [
-                              { key: 'edit', icon: <EditOutlined />, label: 'Edit', onClick: () => (window.location.href = '/kb/' + a.id + '/edit') },
-                              { key: 'delete', icon: <DeleteOutlined />, label: 'Delete', danger: true, onClick: () => handleDelete(a.id, a.title) },
-                            ] as MenuProps['items'],
-                          }}
-                          trigger={['click']}
-                        >
-                          <Button type="text" size="small" icon={<MoreOutlined />} />
-                        </Dropdown>
-                      </li>
+                      <ArticleRow key={a.id} a={a} />
                     ))}
                   </ul>
                 )}
               </div>
             ) : (
               <div>
-                <h3 style={{ fontSize: 13, color: '#6b778c', marginBottom: 8 }}>Recent / root articles</h3>
+                <h3 className="text-[13px] text-[#6b778c] mb-2">Recent / root articles</h3>
                 {list.length === 0 ? (
-                  <Empty description="No articles yet. Create one to get started." />
+                  <div className="py-8 text-center text-[#706e6b]">No articles yet. Create one to get started.</div>
                 ) : (
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <ul className="list-none p-0 m-0">
                     {list.map((a) => (
-                      <li
-                        key={a.id}
-                        style={{
-                          padding: '8px 10px',
-                          borderBottom: '1px solid #f0f0f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Link to={`/kb/${a.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <FileTextOutlined style={{ color: PRIMARY }} />
-                          {a.title}
-                        </Link>
-                        <Dropdown
-                          menu={{
-                            items: [
-                              { key: 'edit', icon: <EditOutlined />, label: 'Edit', onClick: () => (window.location.href = '/kb/' + a.id + '/edit') },
-                              { key: 'delete', icon: <DeleteOutlined />, label: 'Delete', danger: true, onClick: () => handleDelete(a.id, a.title) },
-                            ] as MenuProps['items'],
-                          }}
-                          trigger={['click']}
-                        >
-                          <Button type="text" size="small" icon={<MoreOutlined />} />
-                        </Dropdown>
-                      </li>
+                      <ArticleRow key={a.id} a={a} showIcon />
                     ))}
                   </ul>
                 )}

@@ -1,27 +1,13 @@
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Modal,
-  Input,
-  Select,
-  Table,
-  Space,
-  Switch,
-  Popconfirm,
-  Typography,
-  Tag,
-  message,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  FieldTimeOutlined,
-} from '@ant-design/icons';
+import Button from '@atlaskit/button';
+import ModalDialog, { ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+import TextField from '@atlaskit/textfield';
+import Lozenge from '@atlaskit/lozenge';
 import { useWorkflowStore } from '../store/workflowStore';
 import type { CronSchedule } from '../api/client';
-
-const { Text } = Typography;
+import { useToast } from '../context/ToastContext';
+import { Text } from './ui/Text';
+import { Icons } from './ui/Icons';
 
 interface ScheduleFormState {
   workflowId: number | undefined;
@@ -37,20 +23,46 @@ const defaultForm: ScheduleFormState = {
   enabled: true,
 };
 
+const PRESETS = [
+  { value: '* * * * *', label: 'Every minute' },
+  { value: '*/5 * * * *', label: 'Every 5 minutes' },
+  { value: '*/15 * * * *', label: 'Every 15 minutes' },
+  { value: '0 * * * *', label: 'Every hour' },
+  { value: '0 */6 * * *', label: 'Every 6 hours' },
+  { value: '0 0 * * *', label: 'Daily at midnight' },
+  { value: '0 9 * * *', label: 'Daily at 9 AM' },
+  { value: '0 0 * * 1', label: 'Weekly (Monday)' },
+  { value: '0 0 1 * *', label: 'Monthly (1st)' },
+];
+
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'US Eastern' },
+  { value: 'America/Chicago', label: 'US Central' },
+  { value: 'America/Los_Angeles', label: 'US Pacific' },
+  { value: 'Europe/London', label: 'London' },
+  { value: 'Europe/Berlin', label: 'Berlin' },
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo' },
+  { value: 'Asia/Shanghai', label: 'Shanghai' },
+  { value: 'Australia/Sydney', label: 'Sydney' },
+];
+
 export default function ScheduleManager({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { schedules, workflows, fetchSchedules, fetchWorkflows, addSchedule, editSchedule, removeSchedule } =
     useWorkflowStore();
   const [form, setForm] = useState<ScheduleFormState>(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     if (open) {
       fetchSchedules();
       fetchWorkflows();
     }
-  }, [open]);
+  }, [open, fetchSchedules, fetchWorkflows]);
 
   const openNew = () => {
     setForm(defaultForm);
@@ -71,11 +83,11 @@ export default function ScheduleManager({ open, onClose }: { open: boolean; onCl
 
   const handleSave = async () => {
     if (!form.workflowId) {
-      messageApi.warning('Workflow is required');
+      toast.warning('Workflow is required');
       return;
     }
     if (!form.expression.trim()) {
-      messageApi.warning('Cron expression is required');
+      toast.warning('Cron expression is required');
       return;
     }
     const payload: Partial<CronSchedule> = {
@@ -87,32 +99,33 @@ export default function ScheduleManager({ open, onClose }: { open: boolean; onCl
     try {
       if (editingId) {
         await editSchedule(editingId, payload);
-        messageApi.success('Schedule updated');
+        toast.success('Schedule updated');
       } else {
         await addSchedule(payload);
-        messageApi.success('Schedule created');
+        toast.success('Schedule created');
       }
       setFormOpen(false);
     } catch {
-      messageApi.error('Failed to save schedule');
+      toast.error('Failed to save schedule');
     }
   };
 
   const handleToggle = async (s: CronSchedule, enabled: boolean) => {
     try {
       await editSchedule(s.id, { ...s, enabled });
-      messageApi.success(enabled ? 'Schedule enabled' : 'Schedule paused');
+      toast.success(enabled ? 'Schedule enabled' : 'Schedule paused');
     } catch {
-      messageApi.error('Failed to update schedule');
+      toast.error('Failed to update schedule');
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await removeSchedule(id);
-      messageApi.success('Schedule deleted');
+      toast.success('Schedule deleted');
+      setDeleteConfirmId(null);
     } catch {
-      messageApi.error('Failed to delete schedule');
+      toast.error('Failed to delete schedule');
     }
   };
 
@@ -121,191 +134,111 @@ export default function ScheduleManager({ open, onClose }: { open: boolean; onCl
     return wf?.name || `#${id}`;
   };
 
-  const columns = [
-    {
-      title: 'Workflow',
-      dataIndex: 'workflowId',
-      key: 'workflowId',
-      render: (id: number) => <Text strong style={{ fontSize: 12 }}>{workflowName(id)}</Text>,
-    },
-    {
-      title: 'Expression',
-      dataIndex: 'expression',
-      key: 'expression',
-      render: (expr: string) => (
-        <Tag style={{ fontFamily: 'monospace', fontSize: 11 }}>{expr}</Tag>
-      ),
-    },
-    {
-      title: 'Enabled',
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 70,
-      render: (enabled: boolean, record: CronSchedule) => (
-        <Switch size="small" checked={enabled} onChange={(v) => handleToggle(record, v)} />
-      ),
-    },
-    {
-      title: 'Next Run',
-      dataIndex: 'nextRunAt',
-      key: 'nextRunAt',
-      render: (v: string | undefined) =>
-        v ? (
-          <Text type="secondary" style={{ fontSize: 10 }}>
-            {new Date(v).toLocaleString()}
-          </Text>
-        ) : (
-          <Text type="secondary" style={{ fontSize: 10 }}>—</Text>
-        ),
-    },
-    {
-      title: 'Last Run',
-      dataIndex: 'lastRunAt',
-      key: 'lastRunAt',
-      render: (v: string | undefined) =>
-        v ? (
-          <Text type="secondary" style={{ fontSize: 10 }}>
-            {new Date(v).toLocaleString()}
-          </Text>
-        ) : (
-          <Text type="secondary" style={{ fontSize: 10 }}>—</Text>
-        ),
-    },
-    {
-      title: '',
-      key: 'actions',
-      width: 80,
-      render: (_: any, record: CronSchedule) => (
-        <Space size={4}>
-          <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEdit(record)} />
-          <Popconfirm
-            title="Delete this schedule?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-          >
-            <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  if (!open) return null;
 
   return (
-    <Modal
-      title={
-        <Space>
-          <FieldTimeOutlined />
-          <span>Cron Schedules</span>
-        </Space>
-      }
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={720}
-    >
-      {contextHolder}
-      <div style={{ marginBottom: 8 }}>
-        <Button size="small" type="primary" icon={<PlusOutlined />} onClick={openNew}>
-          Add Schedule
-        </Button>
-      </div>
+    <>
+      <ModalDialog onClose={onClose} width="720px">
+        <ModalHeader>
+          <ModalTitle><span className="flex items-center gap-2"><Icons.Schedule /> Cron Schedules</span></ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <div className="mb-2">
+            <Button appearance="primary" onClick={openNew}>
+              <span className="flex items-center gap-1"><Icons.Plus /> Add Schedule</span>
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[#e8e8e8]">
+                  <th className="text-left py-2 px-2 font-semibold">Workflow</th>
+                  <th className="text-left py-2 px-2 font-semibold">Expression</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[70px]">Enabled</th>
+                  <th className="text-left py-2 px-2 font-semibold">Next Run</th>
+                  <th className="text-left py-2 px-2 font-semibold">Last Run</th>
+                  <th className="text-left py-2 px-2 font-semibold w-[80px]" />
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.length === 0 && (
+                  <tr><td colSpan={6} className="py-4 text-center text-[#706e6b]">No schedules yet. Add one to auto-run workflows.</td></tr>
+                )}
+                {schedules.map((record) => (
+                  <tr key={record.id} className="border-b border-[#f0f0f0]">
+                    <td className="py-2 px-2"><Text strong className="text-xs">{workflowName(record.workflowId)}</Text></td>
+                    <td className="py-2 px-2"><Lozenge>{record.expression}</Lozenge></td>
+                    <td className="py-2 px-2">
+                      <label className="flex items-center gap-1">
+                        <input type="checkbox" checked={record.enabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleToggle(record, e.target.checked)} className="rounded" />
+                      </label>
+                    </td>
+                    <td className="py-2 px-2 text-[10px] text-[#706e6b]">{record.nextRunAt ? new Date(record.nextRunAt).toLocaleString() : '—'}</td>
+                    <td className="py-2 px-2 text-[10px] text-[#706e6b]">{record.lastRunAt ? new Date(record.lastRunAt).toLocaleString() : '—'}</td>
+                    <td className="py-2 px-2">
+                      <button type="button" className="p-0.5 rounded hover:bg-black/10 mr-0.5" onClick={() => openEdit(record)} aria-label="Edit"><Icons.Edit /></button>
+                      <button type="button" className="p-0.5 rounded hover:bg-red-100 text-red-600" onClick={() => setDeleteConfirmId(record.id)} aria-label="Delete"><Icons.Delete /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ModalBody>
+      </ModalDialog>
 
-      <Table
-        dataSource={schedules}
-        columns={columns}
-        rowKey="id"
-        size="small"
-        pagination={false}
-        style={{ fontSize: 12 }}
-        locale={{ emptyText: 'No schedules yet. Add one to auto-run workflows.' }}
-      />
+      {formOpen && (
+        <ModalDialog onClose={() => setFormOpen(false)} width="420px">
+          <ModalHeader><ModalTitle>{editingId ? 'Edit Schedule' : 'New Schedule'}</ModalTitle></ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col gap-2">
+              <div>
+                <Text strong className="text-[11px] block mb-0.5">Workflow</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.workflowId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, workflowId: e.target.value ? Number(e.target.value) : undefined })}>
+                  <option value="">Select workflow...</option>
+                  {workflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <Text strong className="text-[11px] block mb-0.5">Preset</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value="" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { const val = e.target.value; if (val) setForm((f) => ({ ...f, expression: val })); }}>
+                  <option value="">Choose preset...</option>
+                  {PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <Text strong className="text-[11px] block mb-0.5">Cron Expression</Text>
+                <TextField value={form.expression} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, expression: e.target.value })} placeholder="*/5 * * * *" />
+                <Text className="text-[9px] text-[#706e6b]">min hour dom month dow</Text>
+              </div>
+              <div>
+                <Text strong className="text-[11px] block mb-0.5">Timezone</Text>
+                <select className="w-full text-sm border border-[#dfe1e6] rounded px-2 py-1" value={form.timezone} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, timezone: e.target.value })}>
+                  {TIMEZONES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="sched-enabled" checked={form.enabled} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, enabled: e.target.checked })} className="rounded" />
+                <label htmlFor="sched-enabled"><Text strong className="text-[11px]">Enabled</Text></label>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button appearance="primary" onClick={handleSave}>{editingId ? 'Update' : 'Create'}</Button>
+            <Button appearance="subtle" onClick={() => setFormOpen(false)}>Cancel</Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
 
-      <Modal
-        title={editingId ? 'Edit Schedule' : 'New Schedule'}
-        open={formOpen}
-        onOk={handleSave}
-        onCancel={() => setFormOpen(false)}
-        okText={editingId ? 'Update' : 'Create'}
-        width={420}
-      >
-        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <div>
-            <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Workflow</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              placeholder="Select workflow..."
-              value={form.workflowId}
-              onChange={(val) => setForm({ ...form, workflowId: val })}
-              options={workflows.map((wf) => ({ value: wf.id, label: wf.name }))}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Preset</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              placeholder="Choose preset..."
-              value={undefined}
-              onChange={(val) => { if (val) setForm({ ...form, expression: val }); }}
-              options={[
-                { value: '* * * * *', label: 'Every minute' },
-                { value: '*/5 * * * *', label: 'Every 5 minutes' },
-                { value: '*/15 * * * *', label: 'Every 15 minutes' },
-                { value: '0 * * * *', label: 'Every hour' },
-                { value: '0 */6 * * *', label: 'Every 6 hours' },
-                { value: '0 0 * * *', label: 'Daily at midnight' },
-                { value: '0 9 * * *', label: 'Daily at 9 AM' },
-                { value: '0 0 * * 1', label: 'Weekly (Monday)' },
-                { value: '0 0 1 * *', label: 'Monthly (1st)' },
-              ]}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Cron Expression</Text>
-            <Input
-              size="small"
-              style={{ fontFamily: 'monospace' }}
-              placeholder="*/5 * * * *"
-              value={form.expression}
-              onChange={(e) => setForm({ ...form, expression: e.target.value })}
-            />
-            <Text type="secondary" style={{ fontSize: 9 }}>min hour dom month dow</Text>
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Timezone</Text>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              showSearch
-              value={form.timezone}
-              onChange={(val) => setForm({ ...form, timezone: val })}
-              options={[
-                { value: 'UTC', label: 'UTC' },
-                { value: 'America/New_York', label: 'US Eastern' },
-                { value: 'America/Chicago', label: 'US Central' },
-                { value: 'America/Los_Angeles', label: 'US Pacific' },
-                { value: 'Europe/London', label: 'London' },
-                { value: 'Europe/Berlin', label: 'Berlin' },
-                { value: 'Asia/Kolkata', label: 'India (IST)' },
-                { value: 'Asia/Tokyo', label: 'Tokyo' },
-                { value: 'Asia/Shanghai', label: 'Shanghai' },
-                { value: 'Australia/Sydney', label: 'Sydney' },
-              ]}
-            />
-          </div>
-          <div>
-            <Text strong style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>Enabled</Text>
-            <Switch
-              size="small"
-              checked={form.enabled}
-              onChange={(v) => setForm({ ...form, enabled: v })}
-            />
-          </div>
-        </Space>
-      </Modal>
-    </Modal>
+      {deleteConfirmId != null && (
+        <ModalDialog onClose={() => setDeleteConfirmId(null)}>
+          <ModalHeader><ModalTitle>Delete this schedule?</ModalTitle></ModalHeader>
+          <ModalFooter>
+            <Button appearance="primary" className="!bg-red-600 hover:!bg-red-700" onClick={() => handleDelete(deleteConfirmId)}>Delete</Button>
+            <Button appearance="subtle" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+          </ModalFooter>
+        </ModalDialog>
+      )}
+    </>
   );
 }
-

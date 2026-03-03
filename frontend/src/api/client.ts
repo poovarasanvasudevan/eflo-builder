@@ -26,6 +26,7 @@ export interface EdgeDef {
   sourceHandle?: string;
   targetHandle?: string;
   label?: string;
+  description?: string; // comment/description on edge (double-click to edit)
 }
 
 export interface Workflow {
@@ -33,11 +34,50 @@ export interface Workflow {
   name: string;
   description: string;
   definition: WorkflowDef;
+  folderId?: number | null;
   createdAt: string;
   updatedAt: string;
   lastRunAt?: string;
   avgRunTimeSec?: number;
 }
+
+export interface WorkflowFolder {
+  id: number;
+  name: string;
+  parentId?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Folders (flow tree)
+export const getFolders = () => api.get<WorkflowFolder[]>('/folders');
+export const createFolder = (data: Partial<WorkflowFolder>) => api.post<WorkflowFolder>('/folders', data);
+export const updateFolder = (id: number, data: Partial<WorkflowFolder>) => api.put<WorkflowFolder>(`/folders/${id}`, data);
+export const deleteFolder = (id: number) => api.delete(`/folders/${id}`);
+
+// Knowledge base (Confluence-style)
+export interface KBArticle {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  content?: Record<string, unknown>;
+  parentId?: number | null;
+  spaceKey: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const kbList = (params?: { space?: string; parentId?: number | null }) =>
+  api.get<KBArticle[]>('/kb/articles', { params: { space: params?.space ?? 'main', parentId: params?.parentId } });
+export const kbListTree = (space = 'main') =>
+  api.get<KBArticle[]>('/kb/articles/tree', { params: { space } });
+export const kbSearch = (q: string, space = 'main', limit = 20) =>
+  api.get<KBArticle[]>('/kb/articles/search', { params: { q, space, limit } });
+export const kbGet = (id: number) => api.get<KBArticle>(`/kb/articles/${id}`);
+export const kbCreate = (data: Partial<KBArticle>) => api.post<KBArticle>('/kb/articles', data);
+export const kbUpdate = (id: number, data: Partial<KBArticle>) => api.put<KBArticle>(`/kb/articles/${id}`, data);
+export const kbDelete = (id: number) => api.delete(`/kb/articles/${id}`);
 
 export interface Execution {
   id: number;

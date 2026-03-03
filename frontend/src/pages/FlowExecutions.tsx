@@ -1,12 +1,14 @@
-import { Table, Button, Breadcrumb, Typography, Tag, Drawer, Timeline, Spin, Collapse } from 'antd';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useWorkflowStore } from '../store/workflowStore';
 import { getWorkflow, getExecution, getExecutionLogs } from '../api/client';
 import type { Execution, Workflow, ExecutionLog } from '../api/client';
 import PageLayout from '../components/PageLayout';
-
-const { Text } = Typography;
+import Button from '@atlaskit/button';
+import Drawer from '@atlaskit/drawer';
+import Lozenge from '@atlaskit/lozenge';
+import Spinner from '@atlaskit/spinner';
+import { Text } from '../components/ui/Text';
 
 function formatDuration(sec: number): string {
   if (sec < 1) return `${(sec * 1000).toFixed(0)}ms`;
@@ -19,16 +21,12 @@ function formatDuration(sec: number): string {
   return min > 0 ? `${h}h ${min}m` : `${h}h`;
 }
 
-function statusColor(status: string): string {
+function statusAppearance(status: string): 'success' | 'removed' | 'inprogress' | 'default' {
   switch (status) {
-    case 'completed':
-      return 'success';
-    case 'running':
-      return 'processing';
-    case 'failed':
-      return 'error';
-    default:
-      return 'default';
+    case 'completed': return 'success';
+    case 'running': return 'inprogress';
+    case 'failed': return 'removed';
+    default: return 'default';
   }
 }
 
@@ -39,6 +37,45 @@ function formatJson(str: string | undefined): string {
   } catch {
     return str;
   }
+}
+
+function LogItem({ log }: { log: ExecutionLog }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const hasInput = log.input != null && log.input !== '';
+  const hasOutput = log.output != null && log.output !== '';
+  const hasError = log.error != null && log.error !== '';
+  return (
+    <div className="border-l-2 border-[#dfe1e6] pl-3 py-1 mb-2">
+      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+        <Text strong className="text-xs">{log.nodeType}</Text>
+        <Lozenge appearance="inprogress">{log.nodeId}</Lozenge>
+        <Lozenge appearance={statusAppearance(log.status)}>{log.status}</Lozenge>
+      </div>
+      <div className="text-[10px] text-[#706e6b] mb-1">{new Date(log.executedAt).toLocaleString()}</div>
+      {(hasInput || hasOutput || hasError) && (
+        <div className="space-y-1">
+          {hasInput && (
+            <div>
+              <button type="button" className="text-[10px] font-medium text-[#16325c]" onClick={() => setOpen((o) => o === 'input' ? null : 'input')}>Input</button>
+              {open === 'input' && <pre className="m-0 mt-0.5 text-[10px] overflow-auto max-h-40 bg-[#f5f5f5] p-2 rounded">{formatJson(log.input)}</pre>}
+            </div>
+          )}
+          {hasOutput && (
+            <div>
+              <button type="button" className="text-[10px] font-medium text-[#16325c]" onClick={() => setOpen((o) => o === 'output' ? null : 'output')}>Output</button>
+              {open === 'output' && <pre className="m-0 mt-0.5 text-[10px] overflow-auto max-h-40 bg-[#f5f5f5] p-2 rounded">{formatJson(log.output)}</pre>}
+            </div>
+          )}
+          {hasError && (
+            <div>
+              <button type="button" className="text-[10px] font-medium text-red-600" onClick={() => setOpen((o) => o === 'error' ? null : 'error')}>Error</button>
+              {open === 'error' && <pre className="m-0 mt-0.5 text-[10px] text-red-600 overflow-auto max-h-40 bg-red-50 p-2 rounded">{log.error}</pre>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function FlowExecutions() {
@@ -83,157 +120,86 @@ export default function FlowExecutions() {
       .finally(() => setDrawerLoading(false));
   }, []);
 
-  const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      render: (id: number) => <Text style={{ fontSize: 11 }}>{id}</Text>,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 140,
-      render: (status: string) => <Tag color={statusColor(status)} style={{ fontSize: 10 }}>{status}</Tag>,
-    },
-    {
-      title: 'Started',
-      dataIndex: 'startedAt',
-      key: 'startedAt',
-      width: 180,
-      render: (v: string) => (v ? <Text style={{ fontSize: 11 }}>{new Date(v).toLocaleString()}</Text> : '—'),
-    },
-    {
-      title: 'Finished',
-      dataIndex: 'finishedAt',
-      key: 'finishedAt',
-      width: 180,
-      render: (v: string) => (v ? <Text style={{ fontSize: 11 }}>{new Date(v).toLocaleString()}</Text> : '—'),
-    },
-    {
-      title: 'Time taken',
-      key: 'duration',
-      width: 180,
-      render: (_: unknown, r: Execution) => {
-        const started = r.startedAt ? new Date(r.startedAt).getTime() : null;
-        const finished = r.finishedAt ? new Date(r.finishedAt).getTime() : null;
-        if (started == null || finished == null || finished < started) return '—';
-        return <Text style={{ fontSize: 11 }}>{formatDuration((finished - started) / 1000)}</Text>;
-      },
-    },
-    {
-      title: 'Details',
-      key: 'details',
-      width: 90,
-      render: (_: unknown, r: Execution) => (
-        <Button type="link" size="small" style={{ padding: 0, fontSize: 11 }} onClick={() => openDetails(r)}>
-          View
-        </Button>
-      ),
-    },
-    {
-      title: 'Error',
-      dataIndex: 'error',
-      key: 'error',
-      ellipsis: true,
-      render: (v: string) => (v ? <Text type="danger" style={{ fontSize: 11 }}>{v}</Text> : '—'),
-    },
-  ];
-
   return (
     <PageLayout>
-      <div style={{ marginBottom: 12 }}>
-        <Breadcrumb
-          style={{ fontSize: 11 }}
-          items={[
-            { title: <Link to="/flows">Flows</Link> },
-            { title: workflow ? workflow.name : `Flow ${flowId}` },
-            { title: 'Executions' },
-          ]}
-        />
-      </div>
-      <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Text strong style={{ fontSize: 12 }}>
+      <nav className="mb-3 text-[11px] flex items-center gap-1 text-[#706e6b]">
+        <Link to="/flows" className="text-[#0052CC] hover:underline">Flows</Link>
+        <span>/</span>
+        <span>{workflow ? workflow.name : `Flow ${flowId}`}</span>
+        <span>/</span>
+        <span>Executions</span>
+      </nav>
+      <div className="mb-2 flex items-center gap-2">
+        <Text strong className="text-xs">
           {workflow ? `Executions for "${workflow.name}"` : 'Executions'}
         </Text>
-        <Button size="small" type="primary" onClick={() => navigate('/flows')}>
-          Back to Flows
-        </Button>
+        <Button appearance="primary" onClick={() => navigate('/flows')}>Back to Flows</Button>
       </div>
-      <Table
-        size="small"
-        columns={columns}
-        dataSource={executions}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} executions`,
-        }}
-        style={{ fontSize: 12 }}
-        locale={{ emptyText: 'No executions for this flow yet.' }}
-      />
-      <Drawer
-        title={selectedExecution ? `Execution #${selectedExecution.id}` : 'Execution details'}
-        placement="right"
-        width={480}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        styles={{ body: { paddingTop: 8 } }}
-      >
+      {loading ? (
+        <div className="flex justify-center py-8"><Spinner size="medium" /></div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[#e8e8e8]">
+                <th className="text-left py-2 px-2 font-semibold" style={{ width: 80 }}>ID</th>
+                <th className="text-left py-2 px-2 font-semibold" style={{ width: 140 }}>Status</th>
+                <th className="text-left py-2 px-2 font-semibold" style={{ width: 180 }}>Started</th>
+                <th className="text-left py-2 px-2 font-semibold" style={{ width: 180 }}>Finished</th>
+                <th className="text-left py-2 px-2 font-semibold" style={{ width: 180 }}>Time taken</th>
+                <th className="text-left py-2 px-2 font-semibold" style={{ width: 90 }}>Details</th>
+                <th className="text-left py-2 px-2 font-semibold">Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {executions.length === 0 && (
+                <tr><td colSpan={7} className="py-8 text-center text-[#706e6b]">No executions for this flow yet.</td></tr>
+              )}
+              {executions.map((r) => {
+                const started = r.startedAt ? new Date(r.startedAt).getTime() : null;
+                const finished = r.finishedAt ? new Date(r.finishedAt).getTime() : null;
+                const duration = started != null && finished != null && finished >= started ? formatDuration((finished - started) / 1000) : '—';
+                return (
+                  <tr key={r.id} className="border-b border-[#f0f0f0] hover:bg-black/[0.02]">
+                    <td className="py-2 px-2 text-[11px]">{r.id}</td>
+                    <td className="py-2 px-2"><Lozenge appearance={statusAppearance(r.status)}>{r.status}</Lozenge></td>
+                    <td className="py-2 px-2 text-[11px]">{r.startedAt ? new Date(r.startedAt).toLocaleString() : '—'}</td>
+                    <td className="py-2 px-2 text-[11px]">{r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}</td>
+                    <td className="py-2 px-2 text-[11px]">{duration}</td>
+                    <td className="py-2 px-2">
+                      <button type="button" className="text-[11px] text-[#0052CC] hover:underline p-0" onClick={() => openDetails(r)}>View</button>
+                    </td>
+                    <td className="py-2 px-2 text-[11px] text-red-600 max-w-[200px] truncate">{r.error || '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Drawer onClose={() => setDrawerOpen(false)} isOpen={drawerOpen} label={selectedExecution ? `Execution #${selectedExecution.id}` : 'Execution details'}>
         {drawerLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-            <Spin />
-          </div>
+          <div className="flex justify-center py-6"><Spinner size="medium" /></div>
         ) : selectedExecution ? (
           <>
-            <div style={{ marginBottom: 16 }}>
-              <Tag color={statusColor(selectedExecution.status)}>{selectedExecution.status}</Tag>
+            <h2 className="text-base font-semibold mb-4">{selectedExecution ? `Execution #${selectedExecution.id}` : 'Execution details'}</h2>
+            <div className="mb-4">
+              <Lozenge appearance={statusAppearance(selectedExecution.status)}>{selectedExecution.status}</Lozenge>
               {selectedExecution.startedAt && (
-                <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
-                  Started: {new Date(selectedExecution.startedAt).toLocaleString()}
-                </Text>
+                <Text className="text-[11px] text-[#706e6b] block mt-1">Started: {new Date(selectedExecution.startedAt).toLocaleString()}</Text>
               )}
               {selectedExecution.finishedAt && (
-                <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-                  Finished: {new Date(selectedExecution.finishedAt).toLocaleString()}
-                </Text>
+                <Text className="text-[11px] text-[#706e6b] block">Finished: {new Date(selectedExecution.finishedAt).toLocaleString()}</Text>
               )}
               {selectedExecution.error && (
-                <Text type="danger" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>{selectedExecution.error}</Text>
+                <Text className="text-[11px] text-red-600 block mt-1">{selectedExecution.error}</Text>
               )}
             </div>
-            <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>Timeline</Text>
-            <Timeline
-              items={executionLogs.map((log) => ({
-                color: log.status === 'completed' ? 'green' : log.status === 'failed' ? 'red' : 'blue',
-                children: (
-                  <div>
-                    <div style={{ marginBottom: 4 }}>
-                      <Text style={{ fontSize: 12 }} strong>{log.nodeType}</Text>
-                      <Tag style={{ marginLeft: 6, fontSize: 10 }}>{log.nodeId}</Tag>
-                      <Tag color={statusColor(log.status)} style={{ fontSize: 10 }}>{log.status}</Tag>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 10, display: 'block', marginBottom: 6 }}>
-                      {new Date(log.executedAt).toLocaleString()}
-                    </Text>
-                    <Collapse
-                      size="small"
-                      items={[
-                        log.input != null && log.input !== '' && { key: 'input', label: 'Input', children: <pre style={{ margin: 0, fontSize: 10, overflow: 'auto', maxHeight: 160 }}>{formatJson(log.input)}</pre> },
-                        log.output != null && log.output !== '' && { key: 'output', label: 'Output', children: <pre style={{ margin: 0, fontSize: 10, overflow: 'auto', maxHeight: 160 }}>{formatJson(log.output)}</pre> },
-                        log.error != null && log.error !== '' && { key: 'error', label: 'Error', children: <pre style={{ margin: 0, fontSize: 10, color: 'var(--ant-color-error)' }}>{log.error}</pre> },
-                      ].filter(Boolean) as { key: string; label: string; children: React.ReactNode }[]}
-                    />
-                  </div>
-                ),
-              }))}
-            />
-            {executionLogs.length === 0 && (
-              <Text type="secondary" style={{ fontSize: 11 }}>No step logs for this execution.</Text>
+            <Text strong className="text-xs block mb-2">Timeline</Text>
+            {executionLogs.length === 0 ? (
+              <Text className="text-[11px] text-[#706e6b]">No step logs for this execution.</Text>
+            ) : (
+              executionLogs.map((log) => <LogItem key={log.id} log={log} />)
             )}
           </>
         ) : null}

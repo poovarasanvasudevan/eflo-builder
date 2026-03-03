@@ -1,7 +1,6 @@
-import { InputNumber, Input, Typography } from 'antd';
+import TextField from '@atlaskit/textfield';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const HTTP_OUT_NODE_DOC: NodeDoc = {
   title: 'HTTP Out',
@@ -26,29 +25,26 @@ export default function HttpOutNodeConfig({ properties, updateProp }: NodeConfig
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Status code</Text>
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
+        <Text strong className="text-[10px] block mb-0.5">Status code</Text>
+        <input
+          type="number"
           min={100}
           max={599}
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1"
           value={(properties.statusCode as number) ?? 200}
-          onChange={(val) => updateProp('statusCode', val)}
+          onChange={(e) => updateProp('statusCode', e.target.value === '' ? undefined : Number(e.target.value))}
         />
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Content-Type</Text>
-        <Input
-          size="small"
+        <Text strong className="text-[10px] block mb-0.5">Content-Type</Text>
+        <TextField
           placeholder="application/json"
           value={(properties.contentType as string) ?? ''}
-          onChange={(e) => updateProp('contentType', e.target.value)}
+          onChange={(e) => updateProp('contentType', e.currentTarget.value)}
         />
       </div>
       <div>
-        <Text type="secondary" style={{ fontSize: 9 }}>
-          Response body comes from input.body or input.payload. Set these in upstream nodes.
-        </Text>
+        <Text className="text-[9px] text-[#706e6b]">Response body comes from input.body or input.payload. Set these in upstream nodes.</Text>
       </div>
     </>
   );

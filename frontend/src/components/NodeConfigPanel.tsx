@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
-import { Input, Typography, Divider, Space, Tag, Tabs } from 'antd';
+import { useEffect, useState } from 'react';
+import Tabs, { TabList, Tab, TabPanel } from '@atlaskit/tabs';
+import TextField from '@atlaskit/textfield';
+import Lozenge from '@atlaskit/lozenge';
 import { useWorkflowStore } from '../store/workflowStore';
 import { getNodeConfigComponent, NODE_DOCS } from './nodeConfigs';
 import { PRIMARY } from '../theme';
-
-const { Text } = Typography;
+import { Text } from './ui/Text';
 
 export default function NodeConfigPanel() {
   const nodes = useWorkflowStore((s) => s.nodes);
@@ -19,21 +20,21 @@ export default function NodeConfigPanel() {
 
   useEffect(() => {
     fetchConfigs();
-  }, []);
+  }, [fetchConfigs]);
 
   if (!selectedNode) {
     return (
-      <div style={{ padding: 8 }}>
-        <Text type="secondary" style={{ fontSize: 11 }}>Select a node to edit its properties</Text>
+      <div className="p-2">
+        <Text className="text-[#706e6b] text-[11px]">Select a node to edit its properties</Text>
       </div>
     );
   }
 
-  const data = selectedNode.data as any;
-  const properties = data.properties || {};
-  const nodeType = selectedNode.type || '';
+  const data = selectedNode.data as Record<string, unknown>;
+  const properties = (data?.properties as Record<string, unknown>) || {};
+  const nodeType = (selectedNode.type as string) || '';
 
-  const updateProp = (key: string, value: any) => {
+  const updateProp = (key: string, value: unknown) => {
     updateNodeData(selectedNode.id, {
       properties: { ...properties, [key]: value },
     });
@@ -43,164 +44,119 @@ export default function NodeConfigPanel() {
     updateNodeData(selectedNode.id, { label });
   };
 
+  const [tabIndex, setTabIndex] = useState(0);
   return (
-    <div style={{ fontSize: 10 }}>
-      <Tabs
-        defaultActiveKey="props"
-        size="small"
-        style={{ padding: '0 8px' }}
-        items={[
-          {
-            key: 'props',
-            label: 'Properties',
-            children: (
-              <div style={{ paddingBottom: 8 }}>
-                <Space direction="vertical" size={4} style={{ width: '100%' }}>
-        <div>
-          <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Label</Text>
-          <Input
-            size="small"
-            value={data.label || ''}
-            onChange={(e) => updateLabel(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <Tag color="blue" style={{ fontSize: 9 }}>{nodeType}</Tag>
-          <Text type="secondary" style={{ fontSize: 9 }}>{selectedNode.id}</Text>
-        </div>
-
-        <Divider style={{ margin: '2px 0' }} />
-        {(() => {
-          const NodeConfig = getNodeConfigComponent(nodeType);
-          if (!NodeConfig) return null;
-          const workflowNodes = (nodes ?? []).map((n) => ({
-            id: n.id,
-            type: n.type ?? undefined,
-            label: (n.data as { label?: string })?.label ?? undefined,
-          }));
-          return (
-            <NodeConfig
-              nodeId={selectedNode.id}
-              nodeType={nodeType}
-              properties={properties}
-              updateProp={updateProp}
-              updateLabel={updateLabel}
-              configs={configs}
-              workflows={workflows ?? []}
-              currentWorkflowId={currentWorkflow?.id ?? null}
-              workflowNodes={workflowNodes}
-            />
-          );
-        })()}
-      </Space>
-              </div>
-            ),
-          },
-          {
-            key: 'docs',
-            label: 'Documentation',
-            children: <NodeDocumentation nodeType={nodeType} />,
-          },
-        ]}
-      />
+    <div className="text-[10px] px-2">
+      <Tabs id="node-config-tabs" selected={tabIndex} onChange={(idx: number) => setTabIndex(idx)}>
+        <TabList>
+          <Tab>Properties</Tab>
+          <Tab>Documentation</Tab>
+        </TabList>
+        <TabPanel>
+          <div className="flex flex-col gap-1 pb-2">
+            <div>
+              <Text strong className="block mb-0.5 text-[10px]">Label</Text>
+              <TextField value={(data?.label as string) || ''} onChange={(e) => updateLabel(e.currentTarget.value)} />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Lozenge appearance="inprogress">{nodeType}</Lozenge>
+              <Text className="text-[9px] text-[#706e6b]">{selectedNode.id}</Text>
+            </div>
+            <div className="border-t border-[#e8e8e8] my-0.5" />
+            {(() => {
+              const NodeConfig = getNodeConfigComponent(nodeType);
+              if (!NodeConfig) return null;
+              const workflowNodes = (nodes ?? []).map((n) => ({
+                id: n.id,
+                type: n.type ?? undefined,
+                label: (n.data as { label?: string })?.label ?? undefined,
+              }));
+              return (
+                <NodeConfig
+                  nodeId={selectedNode.id}
+                  nodeType={nodeType}
+                  properties={properties}
+                  updateProp={updateProp}
+                  updateLabel={updateLabel}
+                  configs={configs}
+                  workflows={workflows ?? []}
+                  currentWorkflowId={currentWorkflow?.id ?? null}
+                  workflowNodes={workflowNodes}
+                />
+              );
+            })()}
+          </div>
+        </TabPanel>
+        <TabPanel>
+          <NodeDocumentation nodeType={nodeType} />
+        </TabPanel>
+      </Tabs>
     </div>
   );
 }
-
-/* ── Documentation Tab Component ── */
 
 function NodeDocumentation({ nodeType }: { nodeType: string }) {
   const doc = NODE_DOCS[nodeType];
 
   if (!doc) {
     return (
-      <div style={{ padding: '12px 4px', color: '#706e6b', fontSize: 11 }}>
+      <div className="py-3 px-1 text-[#706e6b] text-[11px]">
         No documentation available for this node type.
       </div>
     );
   }
 
-  const codeBlockStyle: React.CSSProperties = {
-    background: '#f5f5f5',
-    border: '1px solid #e8e8e8',
-    borderRadius: 4,
-    padding: '6px 8px',
-    fontFamily: "'SF Mono', 'Fira Code', monospace",
-    fontSize: 10,
-    lineHeight: '15px',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-all',
-    overflowX: 'auto',
-    color: '#1e1e1e',
-  };
-
-  const sectionTitle: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 700,
-    color: '#16325c',
-    marginBottom: 3,
-    display: 'block',
-  };
-
   return (
-    <div style={{ paddingBottom: 12 }}>
-      {/* Title & Description */}
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#16325c', marginBottom: 4 }}>{doc.title}</div>
-        <div style={{ fontSize: 11, color: '#444', lineHeight: '16px' }}>{doc.description}</div>
+    <div className="pb-3">
+      <div className="mb-2.5">
+        <div className="text-[13px] font-bold text-[#16325c] mb-1">{doc.title}</div>
+        <div className="text-[11px] text-[#444] leading-4">{doc.description}</div>
       </div>
-
-      {/* How to Use */}
-      <div style={{ marginBottom: 10 }}>
-        <span style={sectionTitle}>📖 How to Use</span>
-        <div style={{ fontSize: 10, color: '#555', lineHeight: '15px' }}>{doc.usage}</div>
+      <div className="mb-2.5">
+        <span className="text-[11px] font-bold text-[#16325c] block mb-0.5">📖 How to Use</span>
+        <div className="text-[10px] text-[#555] leading-[15px]">{doc.usage}</div>
       </div>
-
-      {/* Properties Table */}
-      <div style={{ marginBottom: 10 }}>
-        <span style={sectionTitle}>⚙ Properties</span>
-        <table style={{ width: '100%', fontSize: 10, borderCollapse: 'collapse' }}>
+      <div className="mb-2.5">
+        <span className="text-[11px] font-bold text-[#16325c] block mb-0.5">⚙ Properties</span>
+        <table className="w-full text-[10px] border-collapse">
           <thead>
-            <tr style={{ borderBottom: '1px solid #e8e8e8', textAlign: 'left' }}>
-              <th style={{ padding: '3px 4px', color: '#706e6b', fontWeight: 600 }}>Name</th>
-              <th style={{ padding: '3px 4px', color: '#706e6b', fontWeight: 600 }}>Type</th>
-              <th style={{ padding: '3px 4px', color: '#706e6b', fontWeight: 600 }}>Description</th>
+            <tr className="border-b border-[#e8e8e8] text-left">
+              <th className="py-0.5 px-1 text-[#706e6b] font-semibold">Name</th>
+              <th className="py-0.5 px-1 text-[#706e6b] font-semibold">Type</th>
+              <th className="py-0.5 px-1 text-[#706e6b] font-semibold">Description</th>
             </tr>
           </thead>
           <tbody>
             {doc.properties.map((p) => (
-              <tr key={p.name} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '3px 4px', fontFamily: 'monospace', color: PRIMARY }}>
-                  {p.name}{p.required && <span style={{ color: '#e8647c' }}>*</span>}
+              <tr key={p.name} className="border-b border-[#f0f0f0]">
+                <td className="py-0.5 px-1 font-mono text-[10px]" style={{ color: PRIMARY }}>
+                  {p.name}{p.required && <span className="text-red-500">*</span>}
                 </td>
-                <td style={{ padding: '3px 4px', color: '#706e6b' }}>{p.type}</td>
-                <td style={{ padding: '3px 4px', color: '#444' }}>{p.desc}</td>
+                <td className="py-0.5 px-1 text-[#706e6b]">{p.type}</td>
+                <td className="py-0.5 px-1 text-[#444]">{p.desc}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      {/* Sample Input */}
-      <div style={{ marginBottom: 10 }}>
-        <span style={sectionTitle}>📥 Sample Input</span>
-        <div style={codeBlockStyle}>{JSON.stringify(doc.sampleInput, null, 2)}</div>
+      <div className="mb-2.5">
+        <span className="text-[11px] font-bold text-[#16325c] block mb-0.5">📥 Sample Input</span>
+        <pre className="bg-[#f5f5f5] border border-[#e8e8e8] rounded p-1.5 font-mono text-[10px] leading-[15px] whitespace-pre-wrap break-all overflow-x-auto text-[#1e1e1e]">
+          {JSON.stringify(doc.sampleInput, null, 2)}
+        </pre>
       </div>
-
-      {/* Sample Output */}
-      <div style={{ marginBottom: 10 }}>
-        <span style={sectionTitle}>📤 Sample Output</span>
-        <div style={codeBlockStyle}>{JSON.stringify(doc.sampleOutput, null, 2)}</div>
+      <div className="mb-2.5">
+        <span className="text-[11px] font-bold text-[#16325c] block mb-0.5">📤 Sample Output</span>
+        <pre className="bg-[#f5f5f5] border border-[#e8e8e8] rounded p-1.5 font-mono text-[10px] leading-[15px] whitespace-pre-wrap break-all overflow-x-auto text-[#1e1e1e]">
+          {JSON.stringify(doc.sampleOutput, null, 2)}
+        </pre>
       </div>
-
-      {/* Tips */}
       {doc.tips && doc.tips.length > 0 && (
         <div>
-          <span style={sectionTitle}>💡 Tips</span>
-          <ul style={{ margin: 0, paddingLeft: 16, fontSize: 10, color: '#555', lineHeight: '16px' }}>
+          <span className="text-[11px] font-bold text-[#16325c] block mb-0.5">💡 Tips</span>
+          <ul className="m-0 pl-4 text-[10px] text-[#555] leading-4">
             {doc.tips.map((tip, i) => (
-              <li key={i} style={{ marginBottom: 2 }}>{tip}</li>
+              <li key={i} className="mb-0.5">{tip}</li>
             ))}
           </ul>
         </div>

@@ -1,7 +1,5 @@
-import { Typography } from 'antd';
 import type { NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const START_NODE_DOC: NodeDoc = {
   title: 'Start',
@@ -26,8 +24,6 @@ export const START_NODE_DOC: NodeDoc = {
 
 export default function StartNodeConfig() {
   return (
-    <Text type="secondary" style={{ fontSize: 11 }}>
-      Start node has no configurable properties.
-    </Text>
+    <Text className="text-[#706e6b] text-[11px]">Start node has no configurable properties.</Text>
   );
 }

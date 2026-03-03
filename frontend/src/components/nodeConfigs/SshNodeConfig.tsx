@@ -1,10 +1,8 @@
-import { Select, InputNumber, Typography } from 'antd';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-sh';
 import 'ace-builds/src-noconflict/theme-github';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
+import { Text } from '../ui/Text';
 
 export const SSH_NODE_DOC: NodeDoc = {
   title: 'SSH',
@@ -41,31 +39,26 @@ export default function SshNodeConfig({ properties, updateProp, configs }: NodeC
   return (
     <>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>SSH Config</Text>
-        <Select
-          size="small"
-          style={{ width: '100%' }}
-          placeholder="Select SSH server..."
-          value={properties.configId ?? undefined}
-          onChange={(val) => updateProp('configId', val)}
-          options={sshConfigs.map((c) => ({
-            value: c.id,
-            label: `${c.name} (${c.config?.host || 'host'}:${c.config?.port ?? 22})`,
-          }))}
-          notFoundContent={
-            <Text type="secondary" style={{ fontSize: 10, padding: 4 }}>
-              No SSH configs. Add one in ⚙ Configs.
-            </Text>
-          }
-        />
+        <Text strong className="text-[10px] block mb-0.5">SSH Config</Text>
+        <select
+          className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1 bg-white"
+          value={properties.configId != null ? String(properties.configId) : ''}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateProp('configId', e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Select SSH server...</option>
+          {sshConfigs.map((c) => (
+            <option key={c.id} value={c.id}>{c.name} ({(c.config as { host?: string })?.host || 'host'}:{(c.config as { port?: number })?.port ?? 22})</option>
+          ))}
+        </select>
+        {sshConfigs.length === 0 && <Text className="text-[10px] text-[#706e6b] block mt-0.5">No SSH configs. Add one in ⚙ Configs.</Text>}
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Command</Text>
+        <Text strong className="text-[10px] block mb-0.5">Command</Text>
         <AceEditor
           mode="sh"
           theme="github"
-          value={properties.command || ''}
-          onChange={(code) => updateProp('command', code)}
+          value={(properties.command as string) || ''}
+          onChange={(code: string) => updateProp('command', code)}
           name="ssh-node-command"
           fontSize={10}
           showPrintMargin={false}
@@ -75,20 +68,11 @@ export default function SshNodeConfig({ properties, updateProp, configs }: NodeC
           style={{ width: '100%', minHeight: 120, borderRadius: 4, border: '1px solid #d9d9d9' }}
           editorProps={{ $blockScrolling: true }}
         />
-        <Text type="secondary" style={{ fontSize: 9, display: 'block', marginTop: 4 }}>
-          Shell command to run on the remote host.
-        </Text>
+        <Text className="text-[9px] text-[#706e6b] block mt-1">Shell command to run on the remote host.</Text>
       </div>
       <div>
-        <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Timeout (ms)</Text>
-        <InputNumber
-          size="small"
-          style={{ width: '100%' }}
-          min={1000}
-          max={300000}
-          value={properties.timeoutMs ?? 30000}
-          onChange={(val) => updateProp('timeoutMs', val)}
-        />
+        <Text strong className="text-[10px] block mb-0.5">Timeout (ms)</Text>
+        <input type="number" min={1000} max={300000} className="w-full text-xs border border-[#dfe1e6] rounded px-2 py-1" value={properties.timeoutMs ?? 30000} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProp('timeoutMs', e.target.value === '' ? undefined : Number(e.target.value))} />
       </div>
     </>
   );

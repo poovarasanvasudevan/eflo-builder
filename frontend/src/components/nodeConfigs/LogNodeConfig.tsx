@@ -1,8 +1,5 @@
-import { Input, Typography } from 'antd';
 import type { NodeConfigProps, NodeDoc } from './types';
-
-const { Text } = Typography;
-const { TextArea } = Input;
+import { Text } from '../ui/Text';
 
 export const LOG_NODE_DOC: NodeDoc = {
   title: 'Log',
@@ -29,13 +26,13 @@ export const LOG_NODE_DOC: NodeDoc = {
 export default function LogNodeConfig({ properties, updateProp }: NodeConfigProps) {
   return (
     <div>
-      <Text strong style={{ fontSize: 10, display: 'block', marginBottom: 1 }}>Message</Text>
-      <TextArea
-        size="small"
-        rows={2}
+      <Text strong className="text-[10px] block mb-0.5">Message</Text>
+      <textarea
+        className="w-full min-h-[40px] p-2 border border-[#dfe1e6] rounded text-xs resize-y"
         placeholder="Log message..."
-        value={properties.message || ''}
+        value={(properties.message as string) || ''}
         onChange={(e) => updateProp('message', e.target.value)}
+        rows={2}
       />
     </div>
   );
