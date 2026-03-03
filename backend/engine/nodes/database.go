@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -167,8 +168,21 @@ func buildDSN(driver string, cfg map[string]interface{}) (string, error) {
 	case "mysql":
 		return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, database), nil
 	case "sqlserver":
-		// sqlserver://user:password@host:port?database=name
-		return fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=%s", user, password, host, port, database), nil
+		// sqlserver://user:password@host:port?database=name — user/password must be URL-encoded so
+		// characters like :, @, ! don't get parsed as host:port
+		userInfo := url.UserPassword(user, password)
+		q := url.Values{}
+		if database != "" {
+			q.Set("database", database)
+		}
+		rawQuery := q.Encode()
+		u := &url.URL{
+			Scheme:   "sqlserver",
+			User:     userInfo,
+			Host:     fmt.Sprintf("%s:%d", host, port),
+			RawQuery: rawQuery,
+		}
+		return u.String(), nil
 	default:
 		return "", fmt.Errorf("unsupported driver %s", driver)
 	}

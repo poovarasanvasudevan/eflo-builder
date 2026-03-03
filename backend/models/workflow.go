@@ -20,6 +20,7 @@ type EdgeDef struct {
 	SourceHandle string `json:"sourceHandle,omitempty"`
 	TargetHandle string `json:"targetHandle,omitempty"`
 	Label        string `json:"label,omitempty"`
+	Description  string `json:"description,omitempty"` // comment/description on the edge (double-click in UI)
 }
 
 // WorkflowDefinition is the JSON structure stored in the definition column.
@@ -31,12 +32,13 @@ type WorkflowDefinition struct {
 // Workflow represents a row in the workflows table.
 // LastRunAt and AvgRunTimeSec are populated when listing workflows (from executions), not stored in DB.
 type Workflow struct {
-	ID             int64               `json:"id"`
-	Name           string              `json:"name"`
-	Description    string              `json:"description"`
-	Definition     *WorkflowDefinition `json:"definition"`
-	CreatedAt      time.Time           `json:"createdAt"`
-	UpdatedAt      time.Time           `json:"updatedAt"`
-	LastRunAt      *time.Time          `json:"lastRunAt,omitempty"`
-	AvgRunTimeSec  *float64            `json:"avgRunTimeSec,omitempty"`
+	ID            int64               `json:"id"`
+	Name          string              `json:"name"`
+	Description   string              `json:"description"`
+	Definition    *WorkflowDefinition `json:"definition"`
+	FolderID      *int64              `json:"folderId,omitempty"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	UpdatedAt     time.Time           `json:"updatedAt"`
+	LastRunAt     *time.Time          `json:"lastRunAt,omitempty"`
+	AvgRunTimeSec *float64            `json:"avgRunTimeSec,omitempty"`
 }

@@ -13,6 +13,7 @@ import (
 
 func NewRouter(
 	workflowRepo *repository.WorkflowRepo,
+	folderRepo *repository.FolderRepo,
 	execRepo *repository.ExecutionRepo,
 	execLogRepo *repository.ExecutionLogRepo,
 	configRepo *repository.NodeConfigRepo,
@@ -21,6 +22,7 @@ func NewRouter(
 	redisSubRepo *repository.RedisSubscriptionRepo,
 	emailTriggerRepo *repository.EmailTriggerRepo,
 	httpTriggerRepo *repository.HttpTriggerRepo,
+	kbArticleRepo *repository.KBArticleRepo,
 	eng *engine.Engine,
 	scheduler *engine.Scheduler,
 	redisSub *engine.RedisSubscriber,
@@ -42,6 +44,7 @@ func NewRouter(
 	}))
 
 	wh := &WorkflowHandler{Repo: workflowRepo, ExecRepo: execRepo}
+	fh := &FolderHandler{Repo: folderRepo}
 	eh := &ExecutionHandler{
 		WorkflowRepo: workflowRepo,
 		ExecRepo:     execRepo,
@@ -54,8 +57,16 @@ func NewRouter(
 	rsh := &RedisSubHandler{Repo: redisSubRepo, Subscriber: redisSub}
 	eth := &EmailTriggerHandler{Repo: emailTriggerRepo, Poller: emailPoller}
 	hth := &HttpTriggerHandler{Repo: httpTriggerRepo, WorkflowRepo: workflowRepo, Engine: eng}
+	kbh := &KBHandler{Repo: kbArticleRepo}
 
 	r.Route("/api", func(r chi.Router) {
+		// Workflow folders (tree)
+		r.Get("/folders", fh.List)
+		r.Post("/folders", fh.Create)
+		r.Get("/folders/{id}", fh.GetByID)
+		r.Put("/folders/{id}", fh.Update)
+		r.Delete("/folders/{id}", fh.Delete)
+
 		// Workflow CRUD
 		r.Get("/workflows", wh.List)
 		r.Post("/workflows", wh.Create)
@@ -84,7 +95,7 @@ func NewRouter(
 
 		// Config Store (key-value for secrets, tokens)
 		r.Get("/config-store", csh.List)
-		r.Get("/config-store/full", csh.ListFull)  // must be before /config-store/{key}
+		r.Get("/config-store/full", csh.ListFull) // must be before /config-store/{key}
 		r.Get("/config-store/{key}", csh.Get)
 		r.Post("/config-store", csh.Set)
 		r.Put("/config-store", csh.CreateOrUpdate)
@@ -117,6 +128,15 @@ func NewRouter(
 		r.Get("/http-triggers/{id}", hth.GetByID)
 		r.Put("/http-triggers/{id}", hth.Update)
 		r.Delete("/http-triggers/{id}", hth.Delete)
+
+		// Knowledge base (Confluence-style)
+		r.Get("/kb/articles", kbh.List)
+		r.Get("/kb/articles/tree", kbh.ListAll)
+		r.Get("/kb/articles/search", kbh.Search)
+		r.Post("/kb/articles", kbh.Create)
+		r.Get("/kb/articles/{id}", kbh.GetByID)
+		r.Put("/kb/articles/{id}", kbh.Update)
+		r.Delete("/kb/articles/{id}", kbh.Delete)
 
 		// Inbound HTTP: POST/GET etc. to /api/in/{path} runs the workflow; http_out node sends the response
 		r.HandleFunc("/in/*", hth.HandleHTTPIn)

@@ -1,6 +1,23 @@
 package db
 
-import "database/sql"
+import (
+	"database/sql"
+	"strings"
+)
+
+func isDuplicateColumnOrConstraint(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "duplicate column") ||
+		strings.Contains(s, "duplicate key") ||
+		strings.Contains(s, "duplicate foreign key") ||
+		strings.Contains(s, "errno 1060") ||
+		strings.Contains(s, "errno 1061") ||
+		strings.Contains(s, "errno 1826") ||
+		strings.Contains(s, "error 1826") // duplicate foreign key constraint name
+}
 
 func RunMigrations(db *sql.DB) error {
 	queries := []string{
@@ -109,11 +126,46 @@ func RunMigrations(db *sql.DB) error {
 			"created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
 			"updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+		`CREATE TABLE IF NOT EXISTS workflow_folders (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			name VARCHAR(255) NOT NULL,
+			parent_id BIGINT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (parent_id) REFERENCES workflow_folders(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+		`CREATE TABLE IF NOT EXISTS kb_articles (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			title VARCHAR(500) NOT NULL,
+			slug VARCHAR(500) NOT NULL,
+			summary VARCHAR(1000) DEFAULT '',
+			content JSON,
+			parent_id BIGINT NULL,
+			space_key VARCHAR(100) NOT NULL DEFAULT 'main',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (parent_id) REFERENCES kb_articles(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 	}
 
 	for _, q := range queries {
 		if _, err := db.Exec(q); err != nil {
 			return err
+		}
+	}
+
+	// Add folder_id to workflows if not present (for existing DBs)
+	alterQueries := []string{
+		"ALTER TABLE workflows ADD COLUMN folder_id BIGINT NULL",
+		"ALTER TABLE workflows ADD CONSTRAINT fk_workflow_folder FOREIGN KEY (folder_id) REFERENCES workflow_folders(id) ON DELETE SET NULL",
+	}
+	for _, q := range alterQueries {
+		if _, err := db.Exec(q); err != nil {
+			if !isDuplicateColumnOrConstraint(err) {
+				return err
+			}
 		}
 	}
 	return nil
